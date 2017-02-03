@@ -619,9 +619,9 @@ def PlotEvol(name = 'test', **kwargs):
   fig_star.savefig(os.path.join(PATH, 'output', '%s.star.pdf' % name), bbox_inches = 'tight')
   fig_planet.savefig(os.path.join(PATH, 'output', '%s.planet.pdf' % name), bbox_inches = 'tight')
 
-def Submit(name = 'test', nsteps = 5000, nwalk = 20, nburn = 500, nsamples = 1000,
+def Submit(name = 'test', nsteps = 5000, nwalk = 40, nburn = 500, nsamples = 1000,
            oceans = 10., hydrogen = 0.01, epsilon = 0.15, magma = False, 
-           walltime = 10, nodes = 5, ppn = 16, mpn = 250):
+           walltime = 10, nodes = 2, ppn = 16, mpn = 250):
   '''
   
   '''

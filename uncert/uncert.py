@@ -165,22 +165,23 @@ def LnLike(x, **kwargs):
   InitH = kwargs.get('InitH')
   EpsH2O = kwargs.get('EpsH2O')
   EpsH = kwargs.get('EpsH')
+  InstantO2Sink = kwargs.get('InstantO2Sink')
   
   # Randomize file names
   sysname = 'vpl.%015x' % random.randrange(16**15)
   starname = 'star.%015x' % random.randrange(16**15)
   planetname = 'planet.%015x' % random.randrange(16**15)
-  sysfile = os.path.join(PATH, 'output', sysname + '.in')
-  starfile = os.path.join(PATH, 'output', starname + '.in')
-  planetfile = os.path.join(PATH, 'output', planetname + '.in')
-  logfile = os.path.join(PATH, 'output', sysname + '.log')
-  starfwfile = os.path.join(PATH, 'output', '%s.star.forward' % sysname)
-  planetfwfile = os.path.join(PATH, 'output', '%s.planet.forward' % sysname)
+  sysfile = sysname + '.in'
+  starfile = starname + '.in'
+  planetfile = planetname + '.in'
+  logfile = sysname + '.log'
+  starfwfile = '%s.star.forward' % sysname
+  planetfwfile = '%s.planet.forward' % sysname
   
   # Populate the star input file
   for param in ['dMass', 'dSatXUVFrac', 'dSatXUVTime']:
     star_in = re.sub('%s(.*?)#' % param, '%s %.5e #' % (param, eval(param)), star_in)
-  with open(starfile, 'w') as f:
+  with open(os.path.join(PATH, 'output', starfile), 'w') as f:
     print(star_in, file = f)
   
   # Populate the planet input file
@@ -190,7 +191,8 @@ def LnLike(x, **kwargs):
   planet_in = re.sub('%s(.*?)#' % 'dEnvelopeMass', '%s %.5e #' % ('dEnvelopeMass', InitH), planet_in)
   planet_in = re.sub('%s(.*?)#' % 'dAtmXAbsEffH2O', '%s %.5e #' % ('dAtmXAbsEffH2O', EpsH2O), planet_in)
   planet_in = re.sub('%s\s(.*?)#' % 'dAtmXAbsEffH', '%s %.5e #' % ('dAtmXAbsEffH', EpsH), planet_in)
-  with open(planetfile, 'w') as f:
+  planet_in = re.sub('%s\s(.*?)#' % 'bInstantO2Sink', '%s %d #' % ('bInstantO2Sink', InstantO2Sink), planet_in)
+  with open(os.path.join(PATH, 'output', planetfile), 'w') as f:
     print(planet_in, file = f)
   
   # Populate the system input file
@@ -198,20 +200,20 @@ def LnLike(x, **kwargs):
     vpl_in = re.sub('%s(.*?)#' % param, '%s %.5e #' % (param, eval(param)), vpl_in)
   vpl_in = re.sub('sSystemName(.*?)#', 'sSystemName %s #' % sysname, vpl_in)
   vpl_in = re.sub('saBodyFiles(.*?)#', 'saBodyFiles %s %s #' % (starfile, planetfile), vpl_in)
-  with open(sysfile, 'w') as f:
+  with open(os.path.join(PATH, 'output', sysfile), 'w') as f:
     print(vpl_in, file = f)
   
   # Run VPLANET and get the output, then delete the logfile
   subprocess.call(['vplanet', sysfile], cwd = os.path.join(PATH, 'output'))
-  output = vpl.GetOutput(logfile = logfile)
-
+  output = vpl.GetOutput(os.path.join(PATH, 'output'), logfile = logfile)
+  
   try:
-    os.remove(starfile)
-    os.remove(planetfile)
-    os.remove(sysfile)
-    os.remove(starfwfile)
-    os.remove(planetfwfile)
-    os.remove(logfile)
+    os.remove(os.path.join(PATH, 'output', starfile))
+    os.remove(os.path.join(PATH, 'output', planetfile))
+    os.remove(os.path.join(PATH, 'output', sysfile))
+    os.remove(os.path.join(PATH, 'output', starfwfile))
+    os.remove(os.path.join(PATH, 'output', planetfwfile))
+    os.remove(os.path.join(PATH, 'output', logfile))
   except FileNotFoundError:
     # Run failed!
     return -np.inf, [np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan]
@@ -277,17 +279,17 @@ def GetEvol(x, **kwargs):
   sysname = 'vpl.%015x' % random.randrange(16**15)
   starname = 'star.%015x' % random.randrange(16**15)
   planetname = 'planet.%015x' % random.randrange(16**15)
-  sysfile = os.path.join(PATH, 'output', sysname + '.in')
-  starfile = os.path.join(PATH, 'output', starname + '.in')
-  planetfile = os.path.join(PATH, 'output', planetname + '.in')
-  logfile = os.path.join(PATH, 'output', sysname + '.log')
-  starfwfile = os.path.join(PATH, 'output', '%s.star.forward' % sysname)
-  planetfwfile = os.path.join(PATH, 'output', '%s.planet.forward' % sysname)
+  sysfile = sysname + '.in'
+  starfile = starname + '.in'
+  planetfile = planetname + '.in'
+  logfile = sysname + '.log'
+  starfwfile = '%s.star.forward' % sysname
+  planetfwfile = '%s.planet.forward' % sysname
   
   # Populate the star input file
   for param in ['dMass', 'dSatXUVFrac', 'dSatXUVTime']:
     star_in = re.sub('%s(.*?)#' % param, '%s %.5e #' % (param, eval(param)), star_in)
-  with open(starfile, 'w') as f:
+  with open(os.path.join(PATH, 'output', starfile), 'w') as f:
     print(star_in, file = f)
   
   # Populate the planet input file
@@ -298,7 +300,7 @@ def GetEvol(x, **kwargs):
   planet_in = re.sub('%s(.*?)#' % 'dAtmXAbsEffH2O', '%s %.5e #' % ('dAtmXAbsEffH2O', EpsH2O), planet_in)
   planet_in = re.sub('%s\s(.*?)#' % 'dAtmXAbsEffH', '%s %.5e #' % ('dAtmXAbsEffH', EpsH), planet_in)
   planet_in = re.sub('%s\s(.*?)#' % 'bInstantO2Sink', '%s %d #' % ('bInstantO2Sink', InstantO2Sink), planet_in)
-  with open(planetfile, 'w') as f:
+  with open(os.path.join(PATH, 'output', planetfile), 'w') as f:
     print(planet_in, file = f)
   
   # Populate the system input file
@@ -306,20 +308,20 @@ def GetEvol(x, **kwargs):
     vpl_in = re.sub('%s(.*?)#' % param, '%s %.5e #' % (param, eval(param)), vpl_in)
   vpl_in = re.sub('sSystemName(.*?)#', 'sSystemName %s #' % sysname, vpl_in)
   vpl_in = re.sub('saBodyFiles(.*?)#', 'saBodyFiles %s %s #' % (starfile, planetfile), vpl_in)
-  with open(sysfile, 'w') as f:
+  with open(os.path.join(PATH, 'output', sysfile), 'w') as f:
     print(vpl_in, file = f)
   
   # Run VPLANET and get the output, then delete the logfile
   subprocess.call(['vplanet', sysfile], cwd = os.path.join(PATH, 'output'))
-  output = vpl.GetOutput(logfile = logfile)
+  output = vpl.GetOutput(os.path.join(PATH, 'output'), logfile = logfile)
 
   try:
-    os.remove(starfile)
-    os.remove(planetfile)
-    os.remove(sysfile)
-    os.remove(starfwfile)
-    os.remove(planetfwfile)
-    os.remove(logfile)
+    os.remove(os.path.join(PATH, 'output', starfile))
+    os.remove(os.path.join(PATH, 'output', planetfile))
+    os.remove(os.path.join(PATH, 'output', sysfile))
+    os.remove(os.path.join(PATH, 'output', starfwfile))
+    os.remove(os.path.join(PATH, 'output', planetfwfile))
+    os.remove(os.path.join(PATH, 'output', logfile))
   except FileNotFoundError:
     # Run failed!
     return None
@@ -332,6 +334,8 @@ def RunMCMC(oceans = 10, hydrogen = 0, epswater = 0.15, epshydro = 0.15,
   '''
   
   '''
+  
+  print("Running MCMC...")
   
   # Get the input files
   with open(os.path.join(PATH, 'star.in'), 'r') as f:
@@ -366,9 +370,7 @@ def RunMCMC(oceans = 10, hydrogen = 0, epswater = 0.15, epshydro = 0.15,
   sampler = emcee.EnsembleSampler(nwalk, ndim, LnLike, kwargs = kwargs, pool = pool)
   width = 50
   for i, result in enumerate(sampler.sample(x0, blobs0 = blobs0, iterations = nsteps)):
-    n = int((width+1) * float(i) / nsteps)
-    sys.stdout.write("\r[{0}{1}]".format('#' * n, ' ' * (width - n)))
-  sys.stdout.write("\n")
+    print("MCMC: %d/%d..." % (i + 1, nsteps))
   
   # Save
   blobs = np.array(sampler.blobs)
@@ -381,6 +383,8 @@ def PlotChains(name = 'test', **kwargs):
   '''
   
   '''
+  
+  print("Plotting chains...")
   
   # Load
   data = np.load(os.path.join(PATH, 'output', '%s.mcmc.npz' % name))
@@ -483,12 +487,14 @@ def PlotChains(name = 'test', **kwargs):
     axis.set_xticklabels([])
     axis.set_xlim(0, axis.get_xlim()[1] * 1.1)
   
-  fig.savefig(os.path.join(PATH, 'output', '%.chains.pdf' % name), bbox_inches = 'tight')
+  fig.savefig(os.path.join(PATH, 'output', '%s.chains.pdf' % name), bbox_inches = 'tight')
 
 def PlotCorner(name = 'test', **kwargs):
   '''
   
   '''
+  
+  print("Plotting corner plot...")
   
   # Load
   data = np.load(os.path.join(PATH, 'output', '%s.mcmc.npz' % name))
@@ -513,12 +519,14 @@ def PlotCorner(name = 'test', **kwargs):
   # Plot
   matplotlib.rcParams['lines.linewidth'] = 1
   fig = corner.corner(blobs, labels = labels, bins = 50)
-  fig.savefig(os.path.join(PATH, 'output', '%.corner.pdf' % name), bbox_inches = 'tight')
+  fig.savefig(os.path.join(PATH, 'output', '%s.corner.pdf' % name), bbox_inches = 'tight')
 
 def RunEvol(name = 'test', nsamples = 100, pool = None, **kwargs):
   '''
   
   '''
+  
+  print("Running evolution...")
   
   # Load
   data = np.load(os.path.join(PATH, 'output', '%s.mcmc.npz' % name))
@@ -532,6 +540,7 @@ def RunEvol(name = 'test', nsamples = 100, pool = None, **kwargs):
   hydrogen = data['hydrogen']
   epswater = data['epswater']
   epshydro = data['epshydro']
+  magma = data['magma']
   name = data['name']
 
   # Get kwargs
@@ -544,7 +553,7 @@ def RunEvol(name = 'test', nsamples = 100, pool = None, **kwargs):
   kwargs = {'star_in': star_in, 'planet_in': planet_in, 'vpl_in': vpl_in,
             'L': L, 'sigL': sigL, 'logLXUV': logLXUV, 'siglogLXUV': siglogLXUV,
             'InitH2O': -oceans, 'InitH': -hydrogen, 'EpsH2O': epswater, 
-            'EpsH': epshydro}
+            'EpsH': epshydro, 'InstantO2Sink': magma}
 
   # Flatten
   chain = chain[:,nburn:,:].reshape(nwalk * (nsteps - nburn), -1)
@@ -571,6 +580,8 @@ def PlotEvol(name = 'test', **kwargs):
   
   '''
   
+  print("Plotting evolution...")
+  
   # Load
   data = np.load(os.path.join(PATH, 'output', '%s.evol.npz' % name))
   Time = data['Time']
@@ -583,8 +594,8 @@ def PlotEvol(name = 'test', **kwargs):
   # Plot
   fig_star, ax_star = pl.subplots(1,2, figsize = (10, 4))
   fig_star.subplots_adjust(bottom = 0.15, wspace = 0.3)
-  fig_planet, ax_planet = pl.subplots(1,3, figsize = (15, 4))
-  fig_planet.subplots_adjust(bottom = 0.15, wspace = 0.2)
+  fig_planet, ax_planet = pl.subplots(1,3, figsize = (16, 4))
+  fig_planet.subplots_adjust(bottom = 0.15, wspace = 0.3)
   for i in range(len(Time)):
     ax_star[0].plot(Time[i], Luminosity[i], lw = 1, alpha = 0.2)
     ax_star[1].plot(Time[i], LXUVStellar[i], lw = 1, alpha = 0.2)
@@ -605,8 +616,8 @@ def PlotEvol(name = 'test', **kwargs):
   ax_planet[2].set_ylabel('Oxygen (bar)')
 
   # Save
-  fig_star.savefig(os.path.join(PATH, 'output', '%.star.pdf' % name), bbox_inches = 'tight')
-  fig_planet.savefig(os.path.join(PATH, 'output', '%.planet.pdf' % name), bbox_inches = 'tight')
+  fig_star.savefig(os.path.join(PATH, 'output', '%s.star.pdf' % name), bbox_inches = 'tight')
+  fig_planet.savefig(os.path.join(PATH, 'output', '%s.planet.pdf' % name), bbox_inches = 'tight')
 
 def Submit(name = 'test', nsteps = 5000, nwalk = 20, nburn = 500, nsamples = 1000,
            oceans = 10., hydrogen = 0.01, epsilon = 0.15, magma = False, 
@@ -635,14 +646,14 @@ def Submit(name = 'test', nsteps = 5000, nwalk = 20, nburn = 500, nsamples = 100
 
 if __name__ == '__main__':
   
-  parser = argparse.ArgumentParser(prog = 'uncert', add_help = True)
+  parser = argparse.ArgumentParser(prog = 'uncert', add_help = False)
   parser.add_argument("-n", "--name", type = str, default = 'test', help = 'The run name')
   parser.add_argument("-s", "--nsteps", type = int, default = 5000, help = 'The number of MCMC steps')
   parser.add_argument("-w", "--nwalk", type = int, default = 20, help = 'The number of MCMC walkers')
   parser.add_argument("-b", "--nburn", type = int, default = 500, help = 'The number of burn-in steps')
   parser.add_argument("-e", "--nsamples", type = int, default = 1000, help = 'The number of evolution samples')
   parser.add_argument("-o", "--oceans", type = float, default = 10.0, help = 'The initial number of oceans (TO)')
-  parser.add_argument("-n", "--hydrogen", type = float, default = 0.01, help = 'The initial mass of hydrogen (M_E)')
+  parser.add_argument("-h", "--hydrogen", type = float, default = 0.01, help = 'The initial mass of hydrogen (M_E)')
   parser.add_argument("-x", "--epsilon", type = float, default = 0.15, help = 'XUV efficiency')
   parser.add_argument("-m", "--magma", type = int, default = 0, help = 'Magma present?')
   parser.add_argument("-r", "--run", action = 'store_true', help = 'Run the evolution?')

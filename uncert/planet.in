@@ -15,7 +15,6 @@ bHaltEnvelopeGone         0               # Halt when evaporated?
 dMinSurfWaterMass         -1.e-5          # Planet is desiccated when water content drops below this (Earth oceans)
 sWaterLossModel           lbexact
 sPlanetRadiusModel        proximacenb
-bInstantO2Sink            0
 
 # Orbital Properties
 dEcc          0.0                         # Eccentricity
@@ -30,3 +29,4 @@ dSurfWaterMass #
 dEnvelopeMass #
 dAtmXAbsEffH #
 dAtmXAbsEffH2O #
+bInstantO2Sink #

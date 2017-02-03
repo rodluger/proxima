@@ -19,6 +19,8 @@ import random
 from pool import Pool
 from scipy.stats import norm, lognorm
 import corner
+import argparse
+PATH = os.path.dirname(os.path.abspath(__file__))
 
 # From Ribas et al. (2016), discarding 
 # the flare corrections.
@@ -168,12 +170,12 @@ def LnLike(x, **kwargs):
   sysname = 'vpl.%015x' % random.randrange(16**15)
   starname = 'star.%015x' % random.randrange(16**15)
   planetname = 'planet.%015x' % random.randrange(16**15)
-  sysfile = sysname + '.in'
-  starfile = starname + '.in'
-  planetfile = planetname + '.in'
-  logfile = sysname + '.log'
-  starfwfile = '%s.star.forward' % sysname
-  planetfwfile = '%s.planet.forward' % sysname
+  sysfile = os.path.join(PATH, 'output', sysname + '.in')
+  starfile = os.path.join(PATH, 'output', starname + '.in')
+  planetfile = os.path.join(PATH, 'output', planetname + '.in')
+  logfile = os.path.join(PATH, 'output', sysname + '.log')
+  starfwfile = os.path.join(PATH, 'output', '%s.star.forward' % sysname)
+  planetfwfile = os.path.join(PATH, 'output', '%s.planet.forward' % sysname)
   
   # Populate the star input file
   for param in ['dMass', 'dSatXUVFrac', 'dSatXUVTime']:
@@ -200,7 +202,7 @@ def LnLike(x, **kwargs):
     print(vpl_in, file = f)
   
   # Run VPLANET and get the output, then delete the logfile
-  subprocess.call(['vplanet', sysfile])
+  subprocess.call(['vplanet', sysfile], cwd = os.path.join(PATH, 'output'))
   output = vpl.GetOutput(logfile = logfile)
 
   try:
@@ -269,17 +271,18 @@ def GetEvol(x, **kwargs):
   InitH = kwargs.get('InitH')
   EpsH2O = kwargs.get('EpsH2O')
   EpsH = kwargs.get('EpsH')
+  InstantO2Sink = kwargs.get('InstantO2Sink')
   
   # Randomize file names
   sysname = 'vpl.%015x' % random.randrange(16**15)
   starname = 'star.%015x' % random.randrange(16**15)
   planetname = 'planet.%015x' % random.randrange(16**15)
-  sysfile = sysname + '.in'
-  starfile = starname + '.in'
-  planetfile = planetname + '.in'
-  logfile = sysname + '.log'
-  starfwfile = '%s.star.forward' % sysname
-  planetfwfile = '%s.planet.forward' % sysname
+  sysfile = os.path.join(PATH, 'output', sysname + '.in')
+  starfile = os.path.join(PATH, 'output', starname + '.in')
+  planetfile = os.path.join(PATH, 'output', planetname + '.in')
+  logfile = os.path.join(PATH, 'output', sysname + '.log')
+  starfwfile = os.path.join(PATH, 'output', '%s.star.forward' % sysname)
+  planetfwfile = os.path.join(PATH, 'output', '%s.planet.forward' % sysname)
   
   # Populate the star input file
   for param in ['dMass', 'dSatXUVFrac', 'dSatXUVTime']:
@@ -294,6 +297,7 @@ def GetEvol(x, **kwargs):
   planet_in = re.sub('%s(.*?)#' % 'dEnvelopeMass', '%s %.5e #' % ('dEnvelopeMass', InitH), planet_in)
   planet_in = re.sub('%s(.*?)#' % 'dAtmXAbsEffH2O', '%s %.5e #' % ('dAtmXAbsEffH2O', EpsH2O), planet_in)
   planet_in = re.sub('%s\s(.*?)#' % 'dAtmXAbsEffH', '%s %.5e #' % ('dAtmXAbsEffH', EpsH), planet_in)
+  planet_in = re.sub('%s\s(.*?)#' % 'bInstantO2Sink', '%s %d #' % ('bInstantO2Sink', InstantO2Sink), planet_in)
   with open(planetfile, 'w') as f:
     print(planet_in, file = f)
   
@@ -306,7 +310,7 @@ def GetEvol(x, **kwargs):
     print(vpl_in, file = f)
   
   # Run VPLANET and get the output, then delete the logfile
-  subprocess.call(['vplanet', sysfile])
+  subprocess.call(['vplanet', sysfile], cwd = os.path.join(PATH, 'output'))
   output = vpl.GetOutput(logfile = logfile)
 
   try:
@@ -323,24 +327,25 @@ def GetEvol(x, **kwargs):
   return output
 
 def RunMCMC(oceans = 10, hydrogen = 0, epswater = 0.15, epshydro = 0.15,
-            nwalk = 16, nsteps = 5000, nburn = 500, name = 'test', 
+            nwalk = 16, nsteps = 5000, nburn = 500, name = 'test', magma = False,
             pool = None, **kwargs):
   '''
   
   '''
   
   # Get the input files
-  with open('star.in', 'r') as f:
+  with open(os.path.join(PATH, 'star.in'), 'r') as f:
     star_in = f.read()
-  with open('planet.in', 'r') as f:
+  with open(os.path.join(PATH, 'planet.in'), 'r') as f:
     planet_in = f.read()
-  with open('vpl.in', 'r') as f:
+  with open(os.path.join(PATH, 'vpl.in'), 'r') as f:
     vpl_in = f.read()  
 
   # MCMC kwargs
   kwargs = {'star_in': star_in, 'planet_in': planet_in, 'vpl_in': vpl_in,
             'L': L, 'sigL': sigL, 'logLXUV': logLXUV, 'siglogLXUV': siglogLXUV,
-            'InitH2O': -oceans, 'InitH': -hydrogen, 'EpsH2O': epswater, 'EpsH': epshydro}
+            'InitH2O': -oceans, 'InitH': -hydrogen, 'EpsH2O': epswater, 'EpsH': epshydro,
+            'InstantO2Sink': magma}
 
   # Set up MCMC
   ndim = 5
@@ -368,9 +373,9 @@ def RunMCMC(oceans = 10, hydrogen = 0, epswater = 0.15, epshydro = 0.15,
   # Save
   blobs = np.array(sampler.blobs)
   chain = np.array(sampler.chain)
-  np.savez('%s.mcmc.npz' % name, blobs = blobs, chain = chain, nwalk = nwalk, 
+  np.savez(os.path.join(PATH, 'output', '%s.mcmc.npz' % name), blobs = blobs, chain = chain, nwalk = nwalk, 
            nburn = nburn, nsteps = nsteps, name = name, oceans = oceans,
-           hydrogen = hydrogen, epswater = epswater, epshydro = epshydro)
+           hydrogen = hydrogen, epswater = epswater, epshydro = epshydro, magma = magma)
 
 def PlotChains(name = 'test', **kwargs):
   '''
@@ -378,7 +383,7 @@ def PlotChains(name = 'test', **kwargs):
   '''
   
   # Load
-  data = np.load('%s.mcmc.npz' % name)
+  data = np.load(os.path.join(PATH, 'output', '%s.mcmc.npz' % name))
   blobs = data['blobs']
   chain = data['chain']
   nwalk = data['nwalk']
@@ -478,7 +483,7 @@ def PlotChains(name = 'test', **kwargs):
     axis.set_xticklabels([])
     axis.set_xlim(0, axis.get_xlim()[1] * 1.1)
   
-  return fig, axc, axh
+  fig.savefig(os.path.join(PATH, 'output', '%.chains.pdf' % name), bbox_inches = 'tight')
 
 def PlotCorner(name = 'test', **kwargs):
   '''
@@ -486,7 +491,7 @@ def PlotCorner(name = 'test', **kwargs):
   '''
   
   # Load
-  data = np.load('%s.mcmc.npz' % name)
+  data = np.load(os.path.join(PATH, 'output', '%s.mcmc.npz' % name))
   blobs = data['blobs']
   chain = data['chain']
   nwalk = data['nwalk']
@@ -508,7 +513,7 @@ def PlotCorner(name = 'test', **kwargs):
   # Plot
   matplotlib.rcParams['lines.linewidth'] = 1
   fig = corner.corner(blobs, labels = labels, bins = 50)
-  return fig
+  fig.savefig(os.path.join(PATH, 'output', '%.corner.pdf' % name), bbox_inches = 'tight')
 
 def RunEvol(name = 'test', nsamples = 100, pool = None, **kwargs):
   '''
@@ -516,7 +521,7 @@ def RunEvol(name = 'test', nsamples = 100, pool = None, **kwargs):
   '''
   
   # Load
-  data = np.load('%s.mcmc.npz' % name)
+  data = np.load(os.path.join(PATH, 'output', '%s.mcmc.npz' % name))
   blobs = data['blobs']
   chain = data['chain']
   nwalk = data['nwalk']
@@ -553,7 +558,7 @@ def RunEvol(name = 'test', nsamples = 100, pool = None, **kwargs):
     outputs = pool.map(func, x)
   
   # Save
-  np.savez('%s.evol.npz' % name, 
+  np.savez(os.path.join(PATH, 'output', '%s.evol.npz' % name), 
            Time = [o.star.Time for o in outputs],
            Luminosity = [o.star.Luminosity for o in outputs],
            LXUVStellar = [o.star.LXUVStellar for o in outputs],
@@ -567,7 +572,7 @@ def PlotEvol(name = 'test', **kwargs):
   '''
   
   # Load
-  data = np.load('%s.evol.npz' % name)
+  data = np.load(os.path.join(PATH, 'output', '%s.evol.npz' % name))
   Time = data['Time']
   Luminosity = data['Luminosity']
   LXUVStellar = data['LXUVStellar']
@@ -599,22 +604,69 @@ def PlotEvol(name = 'test', **kwargs):
   ax_planet[1].set_ylabel('Water (TO)')
   ax_planet[2].set_ylabel('Oxygen (bar)')
 
-  return fig_star, ax_star, fig_planet, ax_planet
+  # Save
+  fig_star.savefig(os.path.join(PATH, 'output', '%.star.pdf' % name), bbox_inches = 'tight')
+  fig_planet.savefig(os.path.join(PATH, 'output', '%.planet.pdf' % name), bbox_inches = 'tight')
+
+def Submit(name = 'test', nsteps = 5000, nwalk = 20, nburn = 500, nsamples = 1000,
+           oceans = 10., hydrogen = 0.01, epsilon = 0.15, magma = False, 
+           walltime = 10, nodes = 5, ppn = 16, mpn = 250):
+  '''
+  
+  '''
+  
+  # Submit the cluster job      
+  pbsfile = os.path.join(PATH, 'uncert.pbs')
+  str_w = 'walltime=%d:00:00' % walltime
+  str_v = 'NAME=%s,NSTEPS=%d,NWALK=%d,NBURN=%d,NSAMPLES=%d,OCEANS=%.5f,HYDROGEN=%.5f,EPSILON=%.5f,MAGMA=%d' % \
+          (name, nsteps, nwalk, nburn, nsamples, oceans, hydrogen, epsilon, magma)
+  str_n = 'nodes=%d:ppn=%d,feature=%dcore,mem=%dgb' % (nodes, ppn, ppn, mpn * nodes)
+  str_name = 'download_c%02d' % campaign
+  str_out = os.path.join(PATH, 'output', str_name + '.log')
+  qsub_args = ['qsub', pbsfile,
+               '-v', str_v, 
+               '-o', str_out,
+               '-j', 'oe', 
+               '-N', str_name,
+               '-l', str_n,
+               '-l', str_w]
+  print("Submitting the job...")
+  subprocess.call(qsub_args)
 
 if __name__ == '__main__':
-
+  
+  parser = argparse.ArgumentParser(prog = 'uncert', add_help = True)
+  parser.add_argument("-n", "--name", type = str, default = 'test', help = 'The run name')
+  parser.add_argument("-s", "--nsteps", type = int, default = 5000, help = 'The number of MCMC steps')
+  parser.add_argument("-w", "--nwalk", type = int, default = 20, help = 'The number of MCMC walkers')
+  parser.add_argument("-b", "--nburn", type = int, default = 500, help = 'The number of burn-in steps')
+  parser.add_argument("-e", "--nsamples", type = int, default = 1000, help = 'The number of evolution samples')
+  parser.add_argument("-o", "--oceans", type = float, default = 10.0, help = 'The initial number of oceans (TO)')
+  parser.add_argument("-n", "--hydrogen", type = float, default = 0.01, help = 'The initial mass of hydrogen (M_E)')
+  parser.add_argument("-x", "--epsilon", type = float, default = 0.15, help = 'XUV efficiency')
+  parser.add_argument("-m", "--magma", type = int, default = 0, help = 'Magma present?')
+  parser.add_argument("-r", "--run", action = 'store_true', help = 'Run the evolution?')
+  parser.add_argument("-p", "--plot", action = 'store_true', help = 'Plot the results?')
+  args = parser.parse_args()
+  
   with Pool() as pool:
     
     # Options
-    kwargs = dict(name = 'test', nsteps = 100, nburn = 10, nsamples = 10,
-                  oceans = 10, hydrogen = 0.01)
+    kwargs = dict(name = args.name, nsteps = args.nsteps, nburn = args.nburn, nsamples = args.nsamples,
+                  oceans = args.oceans, hydrogen = args.hydrogen, epshydro = args.epsilon, 
+                  epswater = args.epsilon, magma = bool(args.magma))
+    
+    # Check for output dir
+    if not os.path.exists(os.path.join(PATH, 'output')):
+      os.makedirs(os.path.exists(os.path.join(PATH, 'output')))
     
     # Run
-    RunMCMC(**kwargs)
-    RunEvol(**kwargs)
+    if args.run:
+      RunMCMC(**kwargs)
+      RunEvol(**kwargs)
     
     # Plot
-    PlotChains(**kwargs)
-    PlotCorner(**kwargs)
-    PlotEvol(**kwargs)
-    pl.show()
+    if args.plot:
+      PlotChains(**kwargs)
+      PlotCorner(**kwargs)
+      PlotEvol(**kwargs)

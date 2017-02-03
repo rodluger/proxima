@@ -5,8 +5,8 @@ cd /usr/lusers/rodluger/src/proxima/uncert
 
 if [ $NODES -eq 1 ]; then
   # Run on a single node with Python multiprocessing
-  python uncert.py
+  python uncert.py -r -n $NAME -s $NSTEPS -w $NWALK -b $NBURN -e $NSAMPLES -o $OCEANS -h $HYDROGEN -x $EPSILON -m $MAGMA
 else
   # Run on multiple nodes with MPI
-  mpirun -np $PBS_NP python uncert.py
+  mpirun -np $PBS_NP python uncert.py -r -n $NAME -s $NSTEPS -w $NWALK -b $NBURN -e $NSAMPLES -o $OCEANS -h $HYDROGEN -x $EPSILON -m $MAGMA
 fi

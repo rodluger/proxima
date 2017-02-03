@@ -632,7 +632,7 @@ def Submit(name = 'test', nsteps = 5000, nwalk = 20, nburn = 500, nsamples = 100
   str_v = 'NAME=%s,NSTEPS=%d,NWALK=%d,NBURN=%d,NSAMPLES=%d,OCEANS=%.5f,HYDROGEN=%.5f,EPSILON=%.5f,MAGMA=%d' % \
           (name, nsteps, nwalk, nburn, nsamples, oceans, hydrogen, epsilon, magma)
   str_n = 'nodes=%d:ppn=%d,feature=%dcore,mem=%dgb' % (nodes, ppn, ppn, mpn * nodes)
-  str_name = 'download_c%02d' % campaign
+  str_name = name
   str_out = os.path.join(PATH, 'output', str_name + '.log')
   qsub_args = ['qsub', pbsfile,
                '-v', str_v, 

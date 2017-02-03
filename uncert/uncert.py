@@ -649,7 +649,7 @@ if __name__ == '__main__':
   parser = argparse.ArgumentParser(prog = 'uncert', add_help = False)
   parser.add_argument("-n", "--name", type = str, default = 'test', help = 'The run name')
   parser.add_argument("-s", "--nsteps", type = int, default = 5000, help = 'The number of MCMC steps')
-  parser.add_argument("-w", "--nwalk", type = int, default = 20, help = 'The number of MCMC walkers')
+  parser.add_argument("-w", "--nwalk", type = int, default = 40, help = 'The number of MCMC walkers')
   parser.add_argument("-b", "--nburn", type = int, default = 500, help = 'The number of burn-in steps')
   parser.add_argument("-e", "--nsamples", type = int, default = 1000, help = 'The number of evolution samples')
   parser.add_argument("-o", "--oceans", type = float, default = 10.0, help = 'The initial number of oceans (TO)')

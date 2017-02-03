@@ -323,7 +323,8 @@ def GetEvol(x, **kwargs):
   return output
 
 def RunMCMC(oceans = 10, hydrogen = 0, epswater = 0.15, epshydro = 0.15,
-            nwalk = 16, nsteps = 5000, nburn = 500, name = 'test', pool = None):
+            nwalk = 16, nsteps = 5000, nburn = 500, name = 'test', 
+            pool = None, **kwargs):
   '''
   
   '''
@@ -371,7 +372,7 @@ def RunMCMC(oceans = 10, hydrogen = 0, epswater = 0.15, epshydro = 0.15,
            nburn = nburn, nsteps = nsteps, name = name, oceans = oceans,
            hydrogen = hydrogen, epswater = epswater, epshydro = epshydro)
 
-def PlotChains(name, **kwargs):
+def PlotChains(name = 'test', **kwargs):
   '''
   
   '''
@@ -476,9 +477,10 @@ def PlotChains(name, **kwargs):
   for i, axis in enumerate(axh):
     axis.set_xticklabels([])
     axis.set_xlim(0, axis.get_xlim()[1] * 1.1)
-  pl.show()
+  
+  return fig, axc, axh
 
-def PlotCorner(name, **kwargs):
+def PlotCorner(name = 'test', **kwargs):
   '''
   
   '''
@@ -506,9 +508,9 @@ def PlotCorner(name, **kwargs):
   # Plot
   matplotlib.rcParams['lines.linewidth'] = 1
   fig = corner.corner(blobs, labels = labels, bins = 50)
-  pl.show()
+  return fig
 
-def RunEvol(name, nsamples = 100, pool = None, **kwargs):
+def RunEvol(name = 'test', nsamples = 100, pool = None, **kwargs):
   '''
   
   '''
@@ -559,7 +561,7 @@ def RunEvol(name, nsamples = 100, pool = None, **kwargs):
            SurfWaterMass = [o.planet.SurfWaterMass for o in outputs],
            OxygenMass = [o.planet.OxygenMass for o in outputs])
     
-def PlotEvol(name, **kwargs):
+def PlotEvol(name = 'test', **kwargs):
   '''
   
   '''
@@ -597,8 +599,22 @@ def PlotEvol(name, **kwargs):
   ax_planet[1].set_ylabel('Water (TO)')
   ax_planet[2].set_ylabel('Oxygen (bar)')
 
-  pl.show()
+  return fig_star, ax_star, fig_planet, ax_planet
 
+if __name__ == '__main__':
 
-RunEvol(name = 'test2', nsamples = 10)
-PlotEvol(name = 'test2', nsamples = 10)
+  with Pool() as pool:
+    
+    # Options
+    kwargs = dict(name = 'test', nsteps = 100, nburn = 10, nsamples = 10,
+                  oceans = 10, hydrogen = 0.01)
+    
+    # Run
+    RunMCMC(**kwargs)
+    RunEvol(**kwargs)
+    
+    # Plot
+    PlotChains(**kwargs)
+    PlotCorner(**kwargs)
+    PlotEvol(**kwargs)
+    pl.show()

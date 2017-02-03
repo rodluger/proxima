@@ -665,7 +665,7 @@ if __name__ == '__main__':
     # Options
     kwargs = dict(name = args.name, nsteps = args.nsteps, nburn = args.nburn, nsamples = args.nsamples,
                   oceans = args.oceans, hydrogen = args.hydrogen, epshydro = args.epsilon, 
-                  epswater = args.epsilon, magma = bool(args.magma))
+                  epswater = args.epsilon, magma = bool(args.magma), pool = pool)
     
     # Check for output dir
     if not os.path.exists(os.path.join(PATH, 'output')):

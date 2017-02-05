@@ -329,7 +329,7 @@ def GetEvol(x, **kwargs):
   return output
 
 def RunMCMC(oceans = 10, hydrogen = 0, epswater = 0.15, epshydro = 0.15,
-            nwalk = 16, nsteps = 5000, nburn = 500, name = 'test', magma = False,
+            nwalk = 40, nsteps = 5000, nburn = 500, name = 'test', magma = False,
             pool = None, **kwargs):
   '''
   
@@ -393,6 +393,8 @@ def PlotChains(name = 'test', **kwargs):
   nwalk = data['nwalk']
   nburn = kwargs.get('nburn', data['nburn'])
   ndim = chain.shape[-1]
+  alpha = min(1., 5.e4 / (nwalk * chain.shape[1]))
+  thin = max(1, int(chain.shape[1] / 500))
   
   # Plot the chains
   fig = pl.figure(figsize = (16, 10))
@@ -426,7 +428,7 @@ def PlotChains(name = 'test', **kwargs):
   params = [r'$M_\star$ (M$_\odot$)', r'$\log\ f_{sat}$', r'$\log\ t_{sat}$ (Gyr)', 'Age (Gyr)']
   for p, param in enumerate(params):  
     for k in range(nwalk):
-      axc[p].plot(chain[k,:,p],alpha = 0.2,lw=1)
+      axc[p].plot(chain[k,:,p][::thin],alpha = alpha,lw=1)
     axc[p].set_ylabel(param)
     axh[p].hist(chain[:,nburn:,p].flatten(), bins=30, 
                 orientation="horizontal", histtype='step', 
@@ -441,7 +443,7 @@ def PlotChains(name = 'test', **kwargs):
   scale = [1e2, 1, 1e3, 1, 1e-9, 1, 1, 1]
   for p, param in enumerate(params):
     for k in range(nwalk):
-      axc[ndim + p - 1].plot(blobs[:,k,p] * scale[p], alpha = 0.2, lw = 1)
+      axc[ndim + p - 1].plot(blobs[:,k,p][::thin] * scale[p], alpha = alpha, lw = 1)
     axc[ndim + p - 1].set_ylabel(param)
     values = blobs[nburn:,:,p].flatten() * scale[p]
     values = np.delete(values, np.where(np.isnan(values)))
@@ -482,7 +484,7 @@ def PlotChains(name = 'test', **kwargs):
     axis.margins(0, 0)
     axis.set_xticklabels([])
     axis.get_yaxis().set_label_coords(-0.12, 0.5)
-    axis.axvline(nburn, color = 'b', ls = '--', alpha = 0.5, lw = 2)
+    axis.axvline(nburn / thin, color = 'b', ls = '--', alpha = 0.5, lw = 2)
   for i, axis in enumerate(axh):
     axis.set_xticklabels([])
     axis.set_xlim(0, axis.get_xlim()[1] * 1.1)
@@ -521,7 +523,7 @@ def PlotCorner(name = 'test', **kwargs):
   fig = corner.corner(blobs, labels = labels, bins = 50)
   fig.savefig(os.path.join(PATH, 'output', '%s.corner.pdf' % name), bbox_inches = 'tight')
 
-def RunEvol(name = 'test', nsamples = 100, pool = None, **kwargs):
+def RunEvol(name = 'test', nsamples = 1000, pool = None, **kwargs):
   '''
   
   '''
@@ -560,11 +562,18 @@ def RunEvol(name = 'test', nsamples = 100, pool = None, **kwargs):
 
   # Run!
   func = FunctionWrapper(GetEvol, **kwargs)
-  x = [chain[np.random.randint(0, chain.shape[0])] for i in range(nsamples)]
-  if pool is None:
-    outputs = list(map(func, x))
-  else:
-    outputs = pool.map(func, x)
+  
+  # HACK: Run 50 at a time so as to not overload MPI
+  nsamp = min(50, nsamples)
+  niter = int(np.ceil(nsamples / nsamp)) 
+  outputs = [] 
+  for n in range(niter):
+    x = [chain[np.random.randint(0, chain.shape[0])] for i in range(nsamp)]
+    if pool is None:
+      out = list(map(func, x))
+    else:
+      out = pool.map(func, x)
+    outputs.extend(out)
   
   # Save
   np.savez(os.path.join(PATH, 'output', '%s.evol.npz' % name), 

@@ -563,8 +563,8 @@ def RunEvol(name = 'test', nsamples = 1000, pool = None, **kwargs):
   # Run!
   func = FunctionWrapper(GetEvol, **kwargs)
   
-  # HACK: Run 50 at a time so as to not overload MPI
-  nsamp = min(50, nsamples)
+  # HACK: Run 10 at a time so as to not overload MPI
+  nsamp = min(10, nsamples)
   niter = int(np.ceil(nsamples / nsamp)) 
   outputs = [] 
   for n in range(niter):
@@ -654,6 +654,15 @@ def Submit(name = 'test', nsteps = 5000, nwalk = 40, nburn = 500, nsamples = 100
   subprocess.call(qsub_args)
 
 if __name__ == '__main__':
+  
+  # python -c "import uncert; uncert.Submit(name = 'w10h0m0', oceans = 10., hydrogen = 0., magma = False)"
+  # python -c "import uncert; uncert.Submit(name = 'w5h0m0', oceans = 10., hydrogen = 0., magma = False)"
+  # python -c "import uncert; uncert.Submit(name = 'w10h0m1', oceans = 10., hydrogen = 0., magma = True)"
+  # python -c "import uncert; uncert.Submit(name = 'w5h0m1', oceans = 10., hydrogen = 0., magma = True)"
+  # python -c "import uncert; uncert.Submit(name = 'w10h01m0', oceans = 10., hydrogen = 0.01, magma = False)"
+  # python -c "import uncert; uncert.Submit(name = 'w5h01m0', oceans = 10., hydrogen = 0.01, magma = False)"
+  # python -c "import uncert; uncert.Submit(name = 'w10h01m1', oceans = 10., hydrogen = 0.01, magma = True)"
+  # python -c "import uncert; uncert.Submit(name = 'w5h01m1', oceans = 10., hydrogen = 0.01, magma = True)"
   
   parser = argparse.ArgumentParser(prog = 'uncert', add_help = False)
   parser.add_argument("-n", "--name", type = str, default = 'test', help = 'The run name')

@@ -224,7 +224,7 @@ def LnLike(x, **kwargs):
   
   dEnvMass = float(output.log.final.planet.EnvelopeMass)
   dWaterMass = float(output.log.final.planet.SurfWaterMass)
-  dOxygenMass = float(output.log.final.planet.OxygenMass)
+  dOxygenMass = float(output.log.final.planet.OxygenMass) + float(output.log.final.planet.OxygenMantleMass)
   dLuminosity = float(output.log.final.star.Luminosity)
   dLXUV = float(output.log.final.star.LXUVStellar)
   dRGTime = float(output.log.final.planet.RGDuration)
@@ -582,7 +582,7 @@ def RunEvol(name = 'test', nsamples = 1000, pool = None, **kwargs):
            LXUVStellar = [o.star.LXUVStellar for o in outputs],
            EnvelopeMass = [o.planet.EnvelopeMass for o in outputs],
            SurfWaterMass = [o.planet.SurfWaterMass for o in outputs],
-           OxygenMass = [o.planet.OxygenMass for o in outputs])
+           OxygenMass = [o.planet.OxygenMantleMass + o.planet.OxygenMass for o in outputs])
     
 def PlotEvol(name = 'test', **kwargs):
   '''

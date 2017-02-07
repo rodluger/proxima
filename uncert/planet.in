@@ -20,7 +20,7 @@ sPlanetRadiusModel        proximacenb
 dEcc          0.0                         # Eccentricity
 
 # Output
-saOutputOrder Time -EnvelopeMass -SurfWaterMass -OxygenMass
+saOutputOrder Time -EnvelopeMass -SurfWaterMass -OxygenMass -OxygenMantleMass
 
 # Parameters we'll vary
 dSemi #

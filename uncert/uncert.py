@@ -35,7 +35,7 @@ import re
 import os, sys
 import random
 from pool import Pool
-from scipy.stats import norm, lognorm, skewnorm, gamma
+from scipy.stats import norm
 import corner
 import argparse
 PATH = os.path.dirname(os.path.abspath(__file__))

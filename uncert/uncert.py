@@ -4,12 +4,30 @@
 uncert.py
 ---------
 
+X-ray/EUV fluxes from Ribas et al. (2016), discarding the flare corrections:
+
+                              F       lambda(nm)
+                              ------------------
+                              130     [0.6 - 10]
+                              89      [10 - 40]
+                              13      [40 - 92]
+                              20      [92 - 118]
+                              ------------------
+
+Total FXUV = 252 erg/s/cm^2.
+So total LXUV = 1.67e27 erg/s = 4.34e-7 LSUN,
+hence log(LXUV / LSUN) = -6.36.
+
+Uncertainty is hard to estimate, but we'll somewhat arbitrarily choose
+log( sig LXUV / LSUN) = 0.3, roughly based on observational spread of X-ray values.
+
 '''
 
 from __future__ import division, print_function, absolute_import, unicode_literals
 import vplot as vpl
 import matplotlib
 import matplotlib.pyplot as pl
+from matplotlib.ticker import MaxNLocator, FuncFormatter
 import numpy as np
 import emcee
 import subprocess
@@ -17,24 +35,10 @@ import re
 import os, sys
 import random
 from pool import Pool
-from scipy.stats import norm, lognorm
+from scipy.stats import norm, lognorm, skewnorm, gamma
 import corner
 import argparse
 PATH = os.path.dirname(os.path.abspath(__file__))
-
-# From Ribas et al. (2016), discarding 
-# the flare corrections.
-# F   lambda(nm)
-# --------------
-# 130 [0.6 - 10]
-# 89  [10 - 40]
-# 13  [40 - 92]
-# 20  [92 - 118]
-# --------------
-# FXUV = 252 erg/s/cm^2
-# LXUV = 1.67e27 erg/s = 4.34e-7 LSUN
-# log(LXUV / LSUN) = -6.36
-# log( sig LXUV / LSUN) = 0.3 (Arbitrary, but roughly based on observational spred of X-ray values)
 
 # Constants
 LSUN = 3.846e26
@@ -56,7 +60,7 @@ sigP = 0.002              # Anglada-Escude et al. (2016)
 Mpsini = 1.27             # Anglada-Escude et al. (2016)
 sigMpsini = 0.18          # Anglada-Escude et al. (2016)
 Age = 4.8                 # Barnes et al. (2017)
-sigAge = 1.4              # TODO: should be skewed normal, sigma- = 1.4, sigma+ = 1.1
+sigAge = 1.4              # Should really be skewed normal, sigma- = 1.4, sigma+ = 1.1
 Beta = -1.23              # Ribas et al. (2005) 
 sigBeta = 0.1             # Arbitrary
 
@@ -179,7 +183,7 @@ def LnLike(x, **kwargs):
   planetfwfile = '%s.planet.forward' % sysname
   
   # Populate the star input file
-  for param in ['dMass', 'dSatXUVFrac', 'dSatXUVTime']:
+  for param in ['dMass', 'dSatXUVFrac', 'dSatXUVTime', 'dXUVBeta']:
     star_in = re.sub('%s(.*?)#' % param, '%s %.5e #' % (param, eval(param)), star_in)
   with open(os.path.join(PATH, 'output', starfile), 'w') as f:
     print(star_in, file = f)
@@ -287,7 +291,7 @@ def GetEvol(x, **kwargs):
   planetfwfile = '%s.planet.forward' % sysname
   
   # Populate the star input file
-  for param in ['dMass', 'dSatXUVFrac', 'dSatXUVTime']:
+  for param in ['dMass', 'dSatXUVFrac', 'dSatXUVTime', 'dXUVBeta']:
     star_in = re.sub('%s(.*?)#' % param, '%s %.5e #' % (param, eval(param)), star_in)
   with open(os.path.join(PATH, 'output', starfile), 'w') as f:
     print(star_in, file = f)
@@ -328,8 +332,8 @@ def GetEvol(x, **kwargs):
 
   return output
 
-def RunMCMC(oceans = 10, hydrogen = 0, epswater = 0.15, epshydro = 0.15,
-            nwalk = 40, nsteps = 5000, nburn = 500, name = 'test', magma = False,
+def RunMCMC(oceans = 5., hydrogen = 0., epswater = 0.15, epshydro = 0.15,
+            nwalk = 40, nsteps = 5000, nburn = 500, name = 'w5h0m0', magma = False,
             pool = None, **kwargs):
   '''
   
@@ -379,7 +383,7 @@ def RunMCMC(oceans = 10, hydrogen = 0, epswater = 0.15, epshydro = 0.15,
            nburn = nburn, nsteps = nsteps, name = name, oceans = oceans,
            hydrogen = hydrogen, epswater = epswater, epshydro = epshydro, magma = magma)
 
-def PlotChains(name = 'test', **kwargs):
+def PlotChains(name = 'w5h0m0', **kwargs):
   '''
   
   '''
@@ -437,17 +441,17 @@ def PlotChains(name = 'test', **kwargs):
   
   # Take the log of the LXUV for plotting
   blobs[:,:,3] = np.log10(blobs[:,:,3])
-  
   # Plot the model outputs
   params = [r'a ($10^{-2}$ AU)', r'$m$ (M$_\oplus$)', r'$L_\star$ ($10^{-3}$ L$_\odot$)', r'$\log\ L_{xuv}$ (L$_\odot$)', r'RG Dur. (Gyr)', r'Hydrogen (M$_\oplus$)', 'Water (TO)', 'Oxygen (bar)']
   scale = [1e2, 1, 1e3, 1, 1e-9, 1, 1, 1]
+  bins = [30, 30, 30, 30, 30, 15, 15, 15]
   for p, param in enumerate(params):
     for k in range(nwalk):
       axc[ndim + p - 1].plot(blobs[:,k,p][::thin] * scale[p], alpha = alpha, lw = 1)
     axc[ndim + p - 1].set_ylabel(param)
     values = blobs[nburn:,:,p].flatten() * scale[p]
     values = np.delete(values, np.where(np.isnan(values)))
-    axh[ndim + p - 1].hist(values, bins=30, 
+    axh[ndim + p - 1].hist(values, bins=bins[p], 
                            orientation="horizontal", histtype='step', 
                            fill=False, color = 'k', lw = 1)
     pl.setp(axh[ndim + p - 1].get_yticklabels(), visible=False)
@@ -481,7 +485,7 @@ def PlotChains(name = 'test', **kwargs):
 
   # Appearance
   for i, axis in enumerate(axc):
-    axis.margins(0, 0)
+    axis.margins(0, 0.1)
     axis.set_xticklabels([])
     axis.get_yaxis().set_label_coords(-0.12, 0.5)
     axis.axvline(nburn / thin, color = 'b', ls = '--', alpha = 0.5, lw = 2)
@@ -489,9 +493,12 @@ def PlotChains(name = 'test', **kwargs):
     axis.set_xticklabels([])
     axis.set_xlim(0, axis.get_xlim()[1] * 1.1)
   
+  # Tweak
+  axc[2].margins(0, 0)
+  
   fig.savefig(os.path.join(PATH, 'output', '%s.chains.pdf' % name), bbox_inches = 'tight')
 
-def PlotCorner(name = 'test', **kwargs):
+def PlotCorner(name = 'w5h0m0', **kwargs):
   '''
   
   '''
@@ -523,7 +530,7 @@ def PlotCorner(name = 'test', **kwargs):
   fig = corner.corner(blobs, labels = labels, bins = 50)
   fig.savefig(os.path.join(PATH, 'output', '%s.corner.pdf' % name), bbox_inches = 'tight')
 
-def RunEvol(name = 'test', nsamples = 1000, pool = None, **kwargs):
+def RunEvol(name = 'w5h0m0', nsamples = 1000, pool = None, **kwargs):
   '''
   
   '''
@@ -584,7 +591,7 @@ def RunEvol(name = 'test', nsamples = 1000, pool = None, **kwargs):
            SurfWaterMass = [o.planet.SurfWaterMass for o in outputs],
            OxygenMass = [o.planet.OxygenMantleMass + o.planet.OxygenMass for o in outputs])
     
-def PlotEvol(name = 'test', **kwargs):
+def PlotEvol(name = 'w5h0m0', **kwargs):
   '''
   
   '''
@@ -618,6 +625,8 @@ def PlotEvol(name = 'test', **kwargs):
     axis.set_xlabel('Time (yr)')
   for axis in ax_star:
     axis.set_yscale('log')
+  ax_planet[0].set_yscale('log')
+  ax_planet[1].set_yscale('log')
   ax_star[0].set_ylabel(r'$L_\star$ (L$_\odot$)')
   ax_star[1].set_ylabel(r'$L_{xuv}$ (L$_\odot$)')
   ax_planet[0].set_ylabel(r'Hydrogen (M$_\oplus$)')
@@ -628,8 +637,8 @@ def PlotEvol(name = 'test', **kwargs):
   fig_star.savefig(os.path.join(PATH, 'output', '%s.star.pdf' % name), bbox_inches = 'tight')
   fig_planet.savefig(os.path.join(PATH, 'output', '%s.planet.pdf' % name), bbox_inches = 'tight')
 
-def Submit(name = 'test', nsteps = 5000, nwalk = 40, nburn = 500, nsamples = 1000,
-           oceans = 10., hydrogen = 0.01, epsilon = 0.15, magma = False, 
+def Submit(name = 'w5h0m0', nsteps = 5000, nwalk = 40, nburn = 500, nsamples = 1000,
+           oceans = 5., hydrogen = 0., epsilon = 0.15, magma = False, 
            walltime = 10, nodes = 2, ppn = 16, mpn = 250):
   '''
   
@@ -653,25 +662,374 @@ def Submit(name = 'test', nsteps = 5000, nwalk = 40, nburn = 500, nsamples = 100
   print("Submitting the job...")
   subprocess.call(qsub_args)
 
+def Posteriors(name = 'w5h0m0', **kwargs):
+  '''
+  
+  '''
+  
+  # Load
+  data = np.load(os.path.join(PATH, 'output', '%s.mcmc.npz' % name))
+  blobs = data['blobs']
+  chain = data['chain']
+  nwalk = data['nwalk']
+  nburn = kwargs.get('nburn', data['nburn'])
+  ndim = chain.shape[-1]
+  nsteps = chain.shape[1]
+  prioralpha = 0.5
+  
+  # Plot the histograms
+  fig, ax = pl.subplots(3, 3, figsize = (10, 9))
+  ax = ax.flatten()
+  fig.subplots_adjust(bottom = 0.05, top = 0.95, hspace = 0.3, wspace = 0.2)
+  N = [1. for n in range(9)]
+  
+  # Params
+  params = [r'$M_\star$ (M$_\odot$)', r'$\log\ f_{sat}$', r'$\log\ t_{sat}$ (Gyr)', 'Age (Gyr)']
+  xticks = [[0.1, 0.11, 0.12, 0.13, 0.14], [-5, -4, -3, -2], [-0.5, 0, 0.5, 1], None]
+  for p, param in enumerate(params):  
+    ax[p].set_title(param, fontsize = 14)
+    y = chain[:,nburn:,p].flatten()
+    # Mini hack (fixes plot range)
+    if p == 1:
+      y[0] = -5
+    weights = np.ones_like(y) / len(y)
+    N[p] = ((y.max() - y.min()) / 30)
+    ax[p].hist(y, bins=30, 
+               orientation="vertical", histtype='step', 
+               fill=False, color = 'k', lw = 1, weights = weights)
+    if xticks[p] is not None:
+      ax[p].set_xticks(xticks[p])
+    
+  # Model outputs
+  blobs[:,:,3] = np.log10(blobs[:,:,3])
+  params = [r'a ($10^{-2}$ AU)', r'$m$ (M$_\oplus$)', r'$L_\star$ ($10^{-3}$ L$_\odot$)', 
+            r'$\log\ L_{xuv}$ (L$_\odot$)', r'RG Duration (Myr)']
+  scale = [1e2, 1, 1e3, 1, 1e-6]
+  bins = [30, 30, 30, 30, 30]
+  xticks = [None, None, [1.25, 1.75, 2.25], None, None]
+  for p, param in enumerate(params):
+    ax[ndim + p - 1].set_title(param, fontsize = 14)
+    y = blobs[nburn:,:,p].flatten() * scale[p]
+    y = np.delete(y, np.where(np.isnan(y)))
+    weights = np.ones_like(y) / len(y)
+    N[ndim + p - 1] = ((y.max() - y.min()) / 30)
+    ax[ndim + p - 1].hist(y, bins=bins[p], 
+                          orientation="vertical", histtype='step', 
+                          fill=False, color = 'k', lw = 1, weights = weights)
+    if xticks[p] is not None:
+      ax[ndim + p - 1].set_xticks(xticks[p])
+      
+  # Appearance
+  for i, axis in enumerate(ax):
+    if i == 0 or i == 2 or i == 4:
+      axis.margins(0, 0)
+    else:
+      axis.margins(0.05, 0)
+    axis.set_ylim(0, axis.get_ylim()[1] * 1.1)
+    axis.yaxis.set_major_formatter(FuncFormatter(lambda x, p : '%.2f' % x))
+    for tick in axis.get_xticklabels() + axis.get_yticklabels():
+      tick.set_fontsize(12)
+  for i in [0, 3, 6]:
+    ax[i].set_ylabel('Fraction of Runs', fontsize = 14)  
+  
+  # Plot the mass prior
+  ax[0].axhline(1./0.05 * N[0], color = 'r', ls = '-', lw = 2, alpha = prioralpha)
+  
+  # Plot the fsat prior
+  ax[1].axhline(1./3. * N[1], color = 'r', ls = '-', lw = 2, alpha = prioralpha)
+  
+  # Plot the tsat prior
+  ax[2].axhline(1./1.301 * N[2], color = 'r', ls = '-', lw = 2, alpha = prioralpha)
+  
+  # Plot the age prior
+  x = np.linspace(ax[3].get_xlim()[0], ax[3].get_xlim()[1], 1000)
+  y = norm.pdf(x, Age, sigAge)
+  ax[3].plot(x, y * N[3], 'r-', lw = 2, alpha = prioralpha)
+  
+  # Plot the planet mass prior
+  x = np.linspace(ax[5].get_xlim()[0], ax[5].get_xlim()[1], 300)
+  inc = np.arccos(1 - np.random.random(1000000))
+  msini = Mpsini + sigMpsini * np.random.randn(1000000)
+  m = msini / np.sin(inc)
+  y = np.array(np.histogram(m, x)[0], dtype = float)
+  y /= np.trapz(y, x[:-1])
+  ax[5].plot(0.5 * (x[:-1] + x[1:]), y * N[5], 'r-', lw = 2, alpha = prioralpha)
+  
+  # Plot the semi-major axis prior
+  x = np.linspace(ax[4].get_xlim()[0], ax[4].get_xlim()[1], 30)
+  dMass = 0.1 + np.random.random(10000000) * 0.05
+  dOrbPeriod = (P + sigP * np.random.randn(10000000)) * DAYSEC
+  dSemi = (dOrbPeriod ** 2 * BIGG * (dMass * MSUN) / (4 * np.pi ** 2)) ** (1./3.) / AUCM
+  y = np.array(np.histogram(dSemi, x * 1e-2)[0], dtype = float)
+  y /= np.trapz(y, x[:-1])
+  ax[4].plot(0.5 * (x[:-1] + x[1:]), y * N[4], 'r-', lw = 2, alpha = prioralpha)
+  
+  # Plot the luminosity constraint
+  x = np.linspace(ax[6].get_xlim()[0], ax[6].get_xlim()[1], 1000)
+  y = norm.pdf(x, 1e3 * L, 1e3 * sigL)
+  ax[6].plot(x, y * N[6], 'r-', lw = 2, alpha = prioralpha)
+
+  # Plot the lxuv constraint
+  x = np.linspace(ax[7].get_xlim()[0], ax[7].get_xlim()[1], 1000)
+  y = norm.pdf(x, logLXUV, siglogLXUV)
+  ax[7].plot(x, y * N[7], 'r-', lw = 2, alpha = prioralpha)
+  
+  # Fit the RG duration curve
+  x = np.linspace(ax[8].get_xlim()[0], ax[8].get_xlim()[1], 1000)
+  y = blobs[nburn:,:,4].flatten() * 1e-6
+  y = np.delete(y, np.where(np.isnan(y)))
+  (mu, sigma) = norm.fit(y)
+  y = norm.pdf(x, mu, sigma)
+  ax[8].plot(x, y * N[8], '-', color = 'b', lw = 2, alpha = prioralpha)
+  ax[8].annotate(r"%d $\pm$ %d" % (mu, sigma), xy = (0.975, 0.95), ha = 'right', va = 'top', 
+                 color = 'b', fontsize = 12, xycoords = 'axes fraction', alpha = 1)
+  
+  # Fit the stellar mass
+  x = np.linspace(ax[0].get_xlim()[0], ax[0].get_xlim()[1], 1000)
+  y = chain[:,nburn:,0].flatten()
+  y = np.delete(y, np.where(np.isnan(y)))
+  (mu, sigma) = norm.fit(y)
+  y = norm.pdf(x, mu, sigma)
+  ax[0].plot(x, y * N[0], '-', color = 'b', lw = 2, alpha = prioralpha)
+  ax[0].annotate(r"%.2f $\pm$ %.2f" % (mu, sigma), xy = (0.975, 0.95), ha = 'right', va = 'top', 
+                 color = 'b', fontsize = 12, xycoords = 'axes fraction', alpha = 1)
+
+  # Fit the semi-major axis
+  x = np.linspace(ax[4].get_xlim()[0], ax[4].get_xlim()[1], 1000)
+  y = blobs[nburn:,:,0].flatten() * 1e2
+  y = np.delete(y, np.where(np.isnan(y)))
+  (mu, sigma) = norm.fit(y)
+  y = norm.pdf(x, mu, sigma)
+  ax[4].plot(x, y * N[4], '-', color = 'b', lw = 2, alpha = prioralpha)
+  ax[4].annotate(r"%.1f $\pm$ %.1f" % (mu, sigma), xy = (0.975, 0.95), ha = 'right', va = 'top', 
+                 color = 'b', fontsize = 12, xycoords = 'axes fraction', alpha = 1)
+
+  # Fit the saturation fraction
+  x = np.linspace(ax[1].get_xlim()[0], ax[1].get_xlim()[1], 1000)
+  y = chain[:,nburn:,1].flatten()
+  y = np.delete(y, np.where(np.isnan(y)))
+  (mu, sigma) = norm.fit(y)
+  y = norm.pdf(x, mu, sigma)
+  ax[1].plot(x, y * N[1], '-', color = 'b', lw = 2, alpha = prioralpha)
+  ax[1].annotate(r"%.1f $\pm$ %.1f" % (mu, sigma), xy = (0.975, 0.95), ha = 'right', va = 'top', 
+                 color = 'b', fontsize = 12, xycoords = 'axes fraction', alpha = 1)
+  
+  # Show the age constraint
+  ax[3].annotate(r"%.1f $\pm$ %.1f" % (Age, sigAge), xy = (0.975, 0.95), ha = 'right', va = 'top', 
+                 color = 'r', fontsize = 12, xycoords = 'axes fraction', alpha = 1)
+  
+  # Show the luminosity constraint
+  ax[6].annotate(r"%.2f $\pm$ %.2f" % (1e3 * L, 1e3 * sigL), xy = (0.975, 0.95), ha = 'right', va = 'top', 
+                 color = 'r', fontsize = 12, xycoords = 'axes fraction', alpha = 1)
+  
+  # Show the LXUV constraint
+  ax[7].annotate(r"%.1f $\pm$ %.1f" % (logLXUV, siglogLXUV), xy = (0.975, 0.95), ha = 'right', va = 'top', 
+                 color = 'r', fontsize = 12, xycoords = 'axes fraction', alpha = 1)
+  
+  fig.savefig(os.path.join(PATH, 'output', 'posteriors.pdf'), bbox_inches = 'tight')
+
+def Outputs(names = ['w5h0m0'], labels = None, figname = 'output', wsplit = False, osplit = False, **kwargs):
+  '''
+  
+  '''
+  
+  # Setup
+  fig = pl.figure(figsize = (13, 2.5 * len(names) + 0.5))
+  
+  # Split axes?
+  if not hasattr(wsplit, '__len__'):
+    wsplit = [wsplit for n in range(len(names))]
+  if not hasattr(osplit, '__len__'):
+    osplit = [osplit for n in range(len(names))]
+  if not hasattr(labels, '__len__'):
+    labels = [labels for n in range(len(names))]
+  
+  # Create figure
+  axmain = [None for n in range(len(names))]
+  axtop = [None for n in range(len(names))]
+  for n in range(len(names)):
+    if wsplit[n] and osplit[n]:
+      axmain[n] = [pl.subplot2grid((4 * len(names), 3), (4 * n + 1, 0), colspan = 1, rowspan = 3),
+            pl.subplot2grid((4 * len(names), 3), (4 * n + 1, 1), colspan = 1, rowspan = 3),
+            pl.subplot2grid((4 * len(names), 3), (4 * n, 2), colspan = 1, rowspan = 4)]
+      axtop[n] = [pl.subplot2grid((4 * len(names), 3), (4 * n, 0), colspan = 1, rowspan = 1, sharex = axmain[0][0]),
+             pl.subplot2grid((4 * len(names), 3), (4 * n, 1), colspan = 1, rowspan = 1, sharex = axmain[0][1])]  
+    elif wsplit[n]:
+      axmain[n] = [pl.subplot2grid((4 * len(names), 3), (4 * n + 1, 0), colspan = 1, rowspan = 3),
+            pl.subplot2grid((4 * len(names), 3), (4 * n, 1), colspan = 1, rowspan = 4),
+            pl.subplot2grid((4 * len(names), 3), (4 * n, 2), colspan = 1, rowspan = 4)]
+      axtop[n] = [pl.subplot2grid((4 * len(names), 3), (4 * n, 0), colspan = 1, rowspan = 1, sharex = axmain[0][0]),
+             None]  
+    elif osplit[n]:
+      axmain[n] = [pl.subplot2grid((4 * len(names), 3), (4 * n, 0), colspan = 1, rowspan = 4),
+            pl.subplot2grid((4 * len(names), 3), (4 * n + 1, 1), colspan = 1, rowspan = 3),
+            pl.subplot2grid((4 * len(names), 3), (4 * n, 2), colspan = 1, rowspan = 4)]
+      axtop[n] = [None,
+             pl.subplot2grid((4 * len(names), 3), (4 * n, 1), colspan = 1, rowspan = 1, sharex = axmain[0][1])]  
+    else:
+      axmain[n] = [pl.subplot2grid((4 * len(names), 3), (4 * n, 0), colspan = 1, rowspan = 4),
+            pl.subplot2grid((4 * len(names), 3), (4 * n, 1), colspan = 1, rowspan = 4),
+            pl.subplot2grid((4 * len(names), 3), (4 * n, 2), colspan = 1, rowspan = 4)]
+      axtop[n] = [None, None]
+  fig.subplots_adjust(bottom = 0.05, top = 0.95, hspace = 0.7, wspace = 0.3)
+  
+  # Loop over all runs
+  for plotnum, label, name, ax, axt in zip(range(len(names)), labels, names, axmain, axtop):
+  
+    # Load
+    data = np.load(os.path.join(PATH, 'output', '%s.mcmc.npz' % name))
+    blobs = data['blobs']
+    chain = data['chain']
+    nwalk = data['nwalk']
+    nburn = kwargs.get('nburn', data['nburn'])
+    oceans = data['oceans']
+    ndim = chain.shape[-1]
+    nsteps = chain.shape[1]
+    omax = kwargs.get('omax', 1200)
+    wmax = kwargs.get('wmax', oceans)
+    nbins = kwargs.get('nbins', 30)
+  
+    # Model outputs
+    params = [r"Water (TO)", r"Oxygen (bar)"]
+    for p, param in enumerate(params):
+      ax[p].set_xlabel(param, fontsize = 14)
+      ax[p].set_ylabel('Fraction of Runs', fontsize = 14)
+      y = blobs[nburn:,:,p + 6].flatten()
+      y = np.delete(y, np.where(np.isnan(y)))
+      weights = np.ones_like(y) / len(y) / ((y.max() - y.min()) / 30)
+    
+      if p == 0:
+        bins = np.linspace(0, wmax, nbins)
+        db = bins[1] - bins[0]
+        wxmin = -db
+        wxmax = bins[-1] + db
+        bins = np.concatenate([[wxmin], bins, [wxmax]])
+        y[np.where(y == 0)] = wxmin
+        y[np.where(y == oceans)] = wxmax
+        split = wsplit[plotnum]
+
+      elif p == 1:
+        bins = np.linspace(0, omax, nbins)
+        db = bins[1] - bins[0]
+        oxmin = -db
+        oxmax = bins[-1] + db
+        bins = np.concatenate([[oxmin], bins, [oxmax]])
+        y[np.where(y == 0)] = oxmin
+        split = osplit[plotnum]
+
+      weights = np.ones_like(y) / len(y)
+      n, _, _ = ax[p].hist(y, bins = bins, orientation="vertical", histtype='step', 
+                           fill=False, color = 'k', lw = 1, weights = weights)
+      maxn1 = n[np.argmax(n)]
+      n = np.delete(n, np.argmax(n))
+      maxn2 = n[np.argmax(n)]
+      if split:
+        n, _, _ = axt[p].hist(y, bins = bins, orientation="vertical", histtype='step', 
+                              fill=False, color = 'k', lw = 1, weights = weights)
+        ax[p].set_ylim(0, 1.2 * maxn2) 
+        axt[p].set_ylim(maxn1 - 1.2 * maxn2 / 8, maxn1 + 1.2 * maxn2 / 8)
+        axt[p].set_yticks([maxn1])
+        axt[p].set_yticklabels(['%.2f' % maxn1])
+        ax[p].yaxis.set_label_coords(-0.15, 0.67)
+      else:
+        ax[p].set_ylim(0, 1.2 * maxn1)
+      
+    # Corner
+    blobs = blobs[nburn:,:,np.array([-2,-1])].reshape(nwalk * (nsteps - nburn), 2)
+    water = blobs[:,0]
+    oxygen = blobs[:,1]
+    matplotlib.rcParams['lines.linewidth'] = 1
+    corner.hist2d(water, oxygen, ax = ax[2], plot_density = False, plot_contours = False, data_kwargs = {'alpha': 0.002})
+    
+    # Appearance
+    if label is not None:
+      ax[0].annotate(label, xy = (-0.3, 0.5), xycoords = 'axes fraction', ha = 'right', va = 'center', fontsize = 22)
+    ax[0].set_xlim(wxmin, wxmax)
+    ax[0].get_xaxis().set_major_locator(MaxNLocator(6))
+    ax[1].set_xlim(oxmin, oxmax)
+    ax[1].get_xaxis().set_major_locator(MaxNLocator(5))
+    ax[2].set_xticks(ax[0].get_xticks())
+    ax[2].set_xlim(wxmin, wxmax)
+    ax[2].set_yticks(ax[1].get_xticks())
+    ax[2].set_ylim(oxmin, oxmax)
+    ax[2].set_xlabel('Water (TO)', fontsize = 14)
+    ax[2].set_ylabel('Oxygen (bar)', fontsize = 14)
+    for n in [0,1]:
+      ax[n].yaxis.set_major_formatter(FuncFormatter(lambda x, p : '%.2f' % x))
+      if axt[n] is not None:
+        axt[n].spines['bottom'].set_visible(False)
+        ax[n].spines['top'].set_visible(False)
+        axt[n].xaxis.tick_top()
+        axt[n].tick_params(labeltop='off')
+        ax[n].xaxis.tick_bottom()
+        d = .015
+        kwargs = dict(transform=axt[n].transAxes, color='k', clip_on=False, lw = 1)
+        axt[n].plot((-d, +d), (-d, +d), **kwargs)
+        axt[n].plot((1 - d, 1 + d), (-d, +d), **kwargs)
+        kwargs.update(transform=ax[n].transAxes)
+        ax[n].plot((-d, +d), (1 - 0.25 * d, 1 + 0.25 * d), **kwargs)
+        ax[n].plot((1 - d, 1 + d), (1 - 0.25 * d, 1 + 0.25 * d), **kwargs)
+        axt[n].yaxis.set_major_formatter(FuncFormatter(lambda x, p : '%.2f' % x))
+    for axis in axt + ax:
+      if axis is not None:
+        for tick in axis.get_xticklabels() + axis.get_yticklabels():
+            tick.set_fontsize(12)
+        
+  
+  fig.savefig(os.path.join(PATH, 'output', '%s.pdf' % figname), bbox_inches = 'tight')
+
+def PlotXUVCorner(name = 'w5h0m0e01', **kwargs):
+  '''
+  
+  '''
+  
+  print("Plotting corner plot...")
+  
+  # Load
+  data = np.load(os.path.join(PATH, 'output', '%s.mcmc.npz' % name))
+  blobs = data['blobs']
+  chain = data['chain']
+  nwalk = data['nwalk']
+  nburn = kwargs.get('nburn', data['nburn'])
+  ndim = chain.shape[-1]
+  nsteps = chain.shape[1]
+  
+  # Arrange
+  labels=[r"$\log\ f_\mathrm{sat}$", r"$\log\ t_\mathrm{sat}\ \mathrm{(Gyr)}$", r'$\beta_\mathrm{xuv}$', r'$\log\ L_\mathrm{xuv}$ (L$_\odot$)', r"Water (TO)", r"Oxygen (bar)"]
+  chain = chain[:,nburn:,np.array([1,2,4])].reshape(nwalk * (nsteps - nburn), 3)
+  blobs = np.swapaxes(blobs,0,1)
+  blobs[:,:,3] = np.log10(blobs[:,:,3])
+  blobs = blobs[:,nburn:,np.array([3,-2,-1])].reshape(nwalk * (nsteps - nburn), 3)
+  chain = np.hstack([chain, blobs])
+  
+  # Plot
+  matplotlib.rcParams['lines.linewidth'] = 1
+  fig = corner.corner(chain, labels = labels, bins = 50)
+  fig.savefig(os.path.join(PATH, 'output', 'xuvcorner.pdf'), bbox_inches = 'tight')
+
+def Figures():
+  '''
+  Actually plot the figures in the paper.
+  
+  '''
+  
+  Posteriors('w5h0m0')
+  Outputs(['w5h0m0', 'w5h0m0e05', 'w5h0m0e01'], labels = ['a', 'b', 'c'], figname = 'epsilon')
+  Outputs(['w5h01m0', 'w5h001m0', 'w5h0001m0'], labels = ['a', 'b', 'c'], figname = 'hydrogen', 
+          wsplit = [True, True, False], osplit = [True, True, False])
+  Outputs(['w5h0m1'], figname = 'magma', wsplit = True, osplit = False)
+  PlotXUVCorner('w5h0m0e01')
+  
 if __name__ == '__main__':
-  
-  # python -c "import uncert; uncert.Submit(name = 'w10h0m0', oceans = 10., hydrogen = 0., magma = False)"
-  # python -c "import uncert; uncert.Submit(name = 'w5h0m0', oceans = 5., hydrogen = 0., magma = False)"
-  # python -c "import uncert; uncert.Submit(name = 'w10h0m1', oceans = 10., hydrogen = 0., magma = True)"
-  # python -c "import uncert; uncert.Submit(name = 'w5h0m1', oceans = 5., hydrogen = 0., magma = True)"
-  # python -c "import uncert; uncert.Submit(name = 'w10h01m0', oceans = 10., hydrogen = 0.01, magma = False)"
-  # python -c "import uncert; uncert.Submit(name = 'w5h01m0', oceans = 5., hydrogen = 0.01, magma = False)"
-  # python -c "import uncert; uncert.Submit(name = 'w10h01m1', oceans = 10., hydrogen = 0.01, magma = True)"
-  # python -c "import uncert; uncert.Submit(name = 'w5h01m1', oceans = 5., hydrogen = 0.01, magma = True)"
-  
+
   parser = argparse.ArgumentParser(prog = 'uncert', add_help = False)
   parser.add_argument("-n", "--name", type = str, default = 'test', help = 'The run name')
   parser.add_argument("-s", "--nsteps", type = int, default = 5000, help = 'The number of MCMC steps')
   parser.add_argument("-w", "--nwalk", type = int, default = 40, help = 'The number of MCMC walkers')
   parser.add_argument("-b", "--nburn", type = int, default = 500, help = 'The number of burn-in steps')
   parser.add_argument("-e", "--nsamples", type = int, default = 1000, help = 'The number of evolution samples')
-  parser.add_argument("-o", "--oceans", type = float, default = 10.0, help = 'The initial number of oceans (TO)')
-  parser.add_argument("-h", "--hydrogen", type = float, default = 0.01, help = 'The initial mass of hydrogen (M_E)')
+  parser.add_argument("-o", "--oceans", type = float, default = 5.0, help = 'The initial number of oceans (TO)')
+  parser.add_argument("-h", "--hydrogen", type = float, default = 0., help = 'The initial mass of hydrogen (M_E)')
   parser.add_argument("-x", "--epsilon", type = float, default = 0.15, help = 'XUV efficiency')
   parser.add_argument("-m", "--magma", type = int, default = 0, help = 'Magma present?')
   parser.add_argument("-r", "--run", action = 'store_true', help = 'Run the evolution?')

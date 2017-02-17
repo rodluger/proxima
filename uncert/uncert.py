@@ -140,6 +140,7 @@ def LnLike(x, **kwargs):
   dOutputTime = dStopTime
   dSatXUVTime = 10 ** dSatXUVTime
   dSatXUVTime *= -1
+  dXUVBeta *= -1
   
   # Get the period (all prior); convert to semi-major axis
   dOrbPeriod = (P + sigP * np.random.randn()) * DAYSEC
@@ -253,6 +254,7 @@ def GetEvol(x, **kwargs):
   dOutputTime = 1.e6
   dSatXUVTime = 10 ** dSatXUVTime
   dSatXUVTime *= -1
+  dXUVBeta *= -1
   
   # Get the period (all prior); convert to semi-major axis
   dOrbPeriod = (P + sigP * np.random.randn()) * DAYSEC

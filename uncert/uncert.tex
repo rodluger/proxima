@@ -66,12 +66,13 @@ time $t = 0$ to $t = t_\star$, yielding the output vector $\mathbf{y}$:
 %
 \begin{align}
 \label{eq:mcmcy}
-\mathbf{y}(\mathbf{x}) = \{L_\star, L_\mathrm{xuv}, t_\mathrm{RG}, m_\mathrm{H}, m_\mathrm{H_2O}, m_\mathrm{O_2}\},
+\mathbf{y}(\mathbf{x}) = \{L_\star, L_\mathrm{xuv}, t_\mathrm{RG}, m_\mathrm{H}, m_\mathrm{H_2O}, P_\mathrm{O_2}\},
 \end{align}
 %
 corresponding, respectively, to the stellar luminosity, the stellar XUV luminosity, the duration of the 
 runaway greenhouse phase, the mass of the
-planet's hydrogen envelope, the mass of water remaining on its surface, and the mass of oxygen retained
+planet's hydrogen envelope, the mass of water remaining on its surface, and the amount of oxygen (expressed
+as a partial pressure) retained
 in either the atmosphere or the surface/mantle, all of which are evaluated at $t = t_\star$ (i.e., the present day). 
 Additional parameters that control the evolution of the 
 planet (initial water content, XUV absorption efficiency, etc.) are held fixed in individual runs; see below.
@@ -86,7 +87,9 @@ We therefore use flat-log priors for the saturation fraction and timescale, enfo
 $-5 \leq \log(f_\mathrm{sat}) \leq -2$ and $-0.3 \leq \log(t_\mathrm{sat} / \mathrm{Gyr}) \leq 1$. We use
 a Gaussian prior for the XUV power law exponent, with a mean of 1.23, the value derived by \citep{Ribas05} for
 solar-like stars: $\beta_\mathrm{xuv} \sim \mathcal{N}(-1.23, 0.1)$. We choose an ad hoc standard deviation
-$\sigma = 0.1$ \note{because...}
+$\sigma = 0.1$ and verify \emph{a posteriori} that our results are not sensitive to this choice. As we show
+below, $\beta_\mathrm{xuv}$ does not strongly correlate with the total water lost or total
+amount of oxygen that builds up on the planet.
 
 We also use a flat prior for the stellar mass ($0.1 \leq M_\star / \mathrm{M}_\oplus \leq 0.15$).
 Although stronger constraints on the stellar mass exist \cn, these are derived indirectly from mass-luminosity relations; we thus
@@ -148,7 +151,7 @@ are ``priors,'' though the distinction is purely semantic.
 
 Given this likelihood function, we use MCMC to obtain the posterior probability distributions for each of the parameters
 of interest. We draw each of the $\mathbf{x}$ from their respective prior distributions and run 40 parallel chains of 5,000 
-steps each, discarding the first 500 steps as burn-in. The posterior distributions for the stellar mass, saturation fraction,
+steps each, discarding the first 500 steps as burn-in. The marginalized posterior distributions for the stellar mass, saturation fraction,
 saturation timescale, age, semi-major axis, planet mass, present-day stellar luminosity, present-day stellar XUV luminosity, and 
 duration of the runaway greenhouse are shown in Figure~\ref{fig:star_posteriors} as the black histograms. The red curves 
 indicate our priors/data, and the purple curve is a Gaussian fit to the runaway greenhouse duration posterior,
@@ -157,23 +160,84 @@ yielding $t_\mathrm{RG} = 169 \pm 13$ Myr.
 By construction, the planet mass, stellar age, present-day stellar luminosity, and present-day stellar XUV luminosity posteriors reflect
 their prior distributions. As mentioned above, the stellar mass posterior is entirely informed by the luminosity posterior via the
 \cite{YonseiYale13} stellar evolution tracks. The stellar mass in turn constrains the semi-major axis (via the prior on the period and
-Kepler's laws). The XUV saturation fraction 
+Kepler's laws). The XUV saturation fraction is fairly well constrained by the present-day XUV luminosity; a log-normal fit
+to its posterior yields $\log\ f_\mathrm{sat} = -3.1 \pm 0.5$, which is fully consistent with the observation that M dwarfs
+saturate at or below $\log\ f_\mathrm{sat} \approx -3$ \cn. The longer tail at high $f_\mathrm{sat}$ results from the fact that
+this parameter is strongly correlated with the saturation timescale, $t_\mathrm{sat}$ (see Figure~\ref{fig:corner} below). If
+saturation is short-lived, the initial saturation fraction must be higher to match the present-day XUV luminosity. Interestingly,
+our runs do not provide any constraints on $t_\mathrm{sat}$, whose value is equally likely (in log space) across the range 
+$[0.5, 10]$ Gyr. Finally, the posterior for the XUV power law exponent $\beta_\mathrm{xuv}$ (not shown in the Figure) is 
+the same as the adopted prior, as the present data is insufficient to constrain it.
 
 \begin{figure}[hbt]
   \begin{center}
       \includegraphics[width=0.45\textwidth]{figures/planet_epsilon.pdf}
-       \caption{Planet posteriors (epsilon).}
+       \caption{Marginalized posteriors for the present-day water content (left) and atmospheric oxygen
+       pressure (center) on Proxima Cen b. The joint posteriors for these two parameters are shown at the 
+       right. \textbf{(a)} Posteriors for the default run ($m_\mathrm{H_2O}^0 = 5$ TO, $m_\mathrm{H}^0 = 0$,
+       $\epsilon_\mathrm{xuv} = 0.15$, $\zeta_\mathrm{O_2} = 0$). \textbf{(b)} Same as (a), but for
+       $\epsilon_\mathrm{xuv} = 0.05$. \textbf{(c)} Same as (a), but for
+       $\epsilon_\mathrm{xuv} = 0.01$. For $\epsilon_\mathrm{xuv} \gtrsim 0.05$, the planet loses close to
+       5 TO of water and builds up between 500 and 900 bars of O$_2$ in most runs. For $\epsilon_\mathrm{xuv} \sim 0.01$,
+       the planet loses less water and builds up less O$_2$, though the loss of more than 1 TO is still likely.
+       }
      \label{fig:planet_epsilon}
   \end{center}
 \end{figure}
 
+The two quantities that are of the most interest to us --- the final water content $m_\mathrm{H_2O}$ and final O$_2$ atmospheric 
+pressure $P_\mathrm{O_2}$ of Proxima Cen b --- depend on four additional parameters we must specify: the initial water content $m_\mathrm{H_2O}^0$, the initial hydrogen 
+mass $m_\mathrm{H}^0$ (if the planet formed with a primordial envelope), the XUV escape efficiency $\epsilon_\mathrm{xuv}$, and
+the O$_2$ uptake efficiency $\zeta_\mathrm{O_2}$ of the planet surface. In principle, planet formation models could provide
+priors on $m_\mathrm{H_2O}^0$ and $m_\mathrm{H}^0$, but such models depend on additional parameters that are unknown or poorly 
+constrained. The same is true for the XUV escape efficiency, which can be modeled as in \cite{Ribas16}, and the rate of
+absorption of O$_2$ at the surface, which can be computed as in \cite{Schaefer2016}. However, given the large number of unknown
+parameters needed to constrain these four parameters, for simplicity we perform independent MCMC runs for fixed combinations
+of these. By doing this, we circumvent potential biases arising from incorrect priors on these parameters while still
+highlighting how our results scale for different assumptions about their values.
+
+In the runs discussed below, our default values are $m_\mathrm{H_2O}^0 = 5$ TO, $m_\mathrm{H}^0 = 0\ \mathrm{M_\oplus}$,
+$\epsilon_\mathrm{xuv} = 0.15$, and $\zeta_\mathrm{O_2} = 0$, and we vary each of these parameters in turn. 
+Figure~\ref{fig:planet_epsilon} shows the marginalized posterior distributions for the present-day water content (left column)
+and present-day O$_2$ atmospheric pressure (middle column), as well as a joint posterior for the two parameters (right column)
+for three different values of $\epsilon_\mathrm{xuv}$: \textbf{(a)} 0.15, \textbf{(b)} 0.05, and \textbf{(c)} 0.01. In the first
+two cases, the planet loses all or nearly all of the 5 TO it formed with, building up several hundred bars of O$_2$ (with
+distributions peaking at about 700 bars and with a spread of several hundred bars). For $\epsilon_\mathrm{xuv} = 0.15$, about
+10\% of runs result in no substantial oxygen remaining in the atmosphere; in these runs, the escape was so efficient as to
+remove all of the O$_2$ along with the escaping $H$. In the final case, the amount of water lost is significantly smaller:
+about 2 TO on average, with a peak in the distribution corresponding to a loss of about 0.8 TO. The amount of O$_2$
+remaining is similarly smaller, but still exceeding 100 bars and with similar spread as before. Finally, the joint posterior
+plots emphasize how correlated the present-day water and oxygen content of Proxima Cen b are. Since the rate at which
+oxygen builds up in the atmosphere is initially constant at first \citep{LugerBarnes15}, and since the amount of water
+lost scales with the duration of the escape period, there is a tight linear correlation between the two quantities
+(lower right hand corner of the joint posterior plots). However, as the atmospheric mixing ratio of oxygen increases,
+the rate at which hydrogen escapes---and thus the rate at which oxygen is produced---begins to decrease, leading to a break
+in the linear relationship once $\sim$ 600--700 bars of oxygen build up and leading to the peak in the O$_2$ posteriors
+at around that value.
+
 \begin{figure}[hbt]
   \begin{center}
       \includegraphics[width=0.45\textwidth]{figures/planet_hydrogen.pdf}
-       \caption{Planet posteriors (hydrogen).}
+       \caption{Similar to Figure~\ref{fig:planet_epsilon}, but this time varying the initial mass of the primordial
+       hydrogen envelope of Proxima Cen b. Other parameters are set to their default values. The initial mass of hydrogen
+       is $m_\mathrm{H}^0 =$ \textbf{(a)} $0.01\ \mathrm{M_\oplus}$, \textbf{(a)} $0.001\ \mathrm{M_\oplus}$, and
+       \textbf{(a)} $0.0001\ \mathrm{M_\oplus}$. Note the broken axes in the first two rows. In the first two cases,
+       no water is lost in more than half of the runs; in such cases, a thin hydrogen envelope remains today. In the
+       final case, most planets lost all their hydrogen and all their water. In order to prevent the runaway loss
+       of its water, Proxima Cen b must have formed with more than 0.01\% of its mass in the form of a hydrogen envelope.
+       }
      \label{fig:planet_hydrogen}
   \end{center}
 \end{figure}
+
+In Figure~\ref{fig:planet_hydrogen} we explore the effect of varying the initial hydrogen content of the planet.
+From top to bottom, the rows correspond to initial hydrogen masses equal to 0.01, 0.001, and 0.0001~$\mathrm{M_\oplus}$.
+In the first two cases, the effect of the envelope is clear, as most planets lose no water and build up no oxygen.
+These are mostly cases in which a portion of the hydrogen envelope remains at the present day. However, if the
+initial hydrogen mass is on the order of 0.0001~$\mathrm{M_\oplus}$ (corresponding to roughly 100 times Earth's
+total atmospheric mass), the shielding effect of the envelope is 
+almost negligible; compare panel \textbf{(c)} to the top panel in Figure~\ref{fig:planet_epsilon} (the default run).
+In this case, most of the water is lost to space in the majority of the runs.
 
 \begin{figure}[hbt]
   \begin{center}
@@ -182,6 +246,8 @@ Kepler's laws). The XUV saturation fraction
      \label{fig:planet_hydrogen}
   \end{center}
 \end{figure}
+
+
 
 \begin{figure}[hbt]
   \begin{center}

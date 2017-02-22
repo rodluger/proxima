@@ -1020,10 +1020,15 @@ def Figures():
   Outputs(['w5h01m0', 'w5h001m0', 'w5h0001m0'], labels = ['a', 'b', 'c'], figname = 'hydrogen', 
           wsplit = [True, True, False], osplit = [True, True, False])
   Outputs(['w5h0m1'], figname = 'magma', wsplit = True, osplit = False)
+  Outputs(['w10h0m0', 'w10h0m0e05', 'w10h0m0e01'], labels = ['a', 'b', 'c'], figname = 'epsilon10')
   PlotXUVCorner('w5h0m0e01')
   
 if __name__ == '__main__':
 
+  name = 'w5h0m0', nsteps = 5000, nwalk = 40, nburn = 500, nsamples = 1000,
+           oceans = 5., hydrogen = 0., epsilon = 0.15, magma = False, 
+           walltime = 10, nodes = 2, ppn = 16, mpn = 250
+  
   parser = argparse.ArgumentParser(prog = 'uncert', add_help = False)
   parser.add_argument("-n", "--name", type = str, default = 'test', help = 'The run name')
   parser.add_argument("-s", "--nsteps", type = int, default = 5000, help = 'The number of MCMC steps')

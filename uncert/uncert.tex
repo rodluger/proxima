@@ -82,7 +82,8 @@ given prior information on both
 $\mathbf{x}$ and $\mathbf{y}$. Some parameters---such as the present-day stellar luminosity---are well-constrained,
 while others are less well-known and will thus be informed primarily by our choice of prior. This is the case for
 the XUV saturation fraction, saturation timescale, and power law exponent, which have been studied in detail 
-for solar-like stars \citep{Ribas05} but are poorly constrained for M dwarfs. \note{More info on them here...}
+for solar-like stars \citep{Ribas05} but are poorly constrained for M dwarfs. \note{Include some more citations
+and discuss this a little more...}
 We therefore use flat-log priors for the saturation fraction and timescale, enforcing
 $-5 \leq \log(f_\mathrm{sat}) \leq -2$ and $-0.3 \leq \log(t_\mathrm{sat} / \mathrm{Gyr}) \leq 1$. We use
 a Gaussian prior for the XUV power law exponent, with a mean of 1.23, the value derived by \citep{Ribas05} for
@@ -177,11 +178,24 @@ the same as the adopted prior, as the present data is insufficient to constrain 
        right. \textbf{(a)} Posteriors for the default run ($m_\mathrm{H_2O}^0 = 5$ TO, $m_\mathrm{H}^0 = 0$,
        $\epsilon_\mathrm{xuv} = 0.15$, $\zeta_\mathrm{O_2} = 0$). \textbf{(b)} Same as (a), but for
        $\epsilon_\mathrm{xuv} = 0.05$. \textbf{(c)} Same as (a), but for
-       $\epsilon_\mathrm{xuv} = 0.01$. For $\epsilon_\mathrm{xuv} \gtrsim 0.05$, the planet loses close to
-       5 TO of water and builds up between 500 and 900 bars of O$_2$ in most runs. For $\epsilon_\mathrm{xuv} \sim 0.01$,
+       $\epsilon_\mathrm{xuv} = 0.01$. For $\epsilon_\mathrm{xuv} \gtrsim 0.05$, the planet is desiccated or
+       almost desiccated and builds up between 500 and 900 bars of O$_2$ in most runs. For $\epsilon_\mathrm{xuv} \sim 0.01$,
        the planet loses less water and builds up less O$_2$, though the loss of more than 1 TO is still likely.
        }
      \label{fig:planet_epsilon}
+  \end{center}
+\end{figure}
+
+\begin{figure}[hbt]
+  \begin{center}
+      \includegraphics[width=0.45\textwidth]{figures/planet_epsilon10.pdf}
+       \caption{Similar to Figure~\ref{fig:planet_epsilon}, but for an initial water content
+       $m_\mathrm{H_2O}^0 = 10$ TO. As before, the rows correspond to XUV escape efficiencies of
+       0.15, 0.05, and 0.01 from top to bottom, respectively. For high XUV efficiency, Proxima
+       Cen b loses more than 5 TO in most runs (and is desiccated in $\sim$ 20\% of runs). At lower
+       efficiency, the planet loses less water. The amount of O$_2$ that builds up is similar
+       to before, but a buildup of more than 1000 bars is now possible.}
+     \label{fig:planet_epsilon10}
   \end{center}
 \end{figure}
 
@@ -215,6 +229,13 @@ the rate at which hydrogen escapes---and thus the rate at which oxygen is produc
 in the linear relationship once $\sim$ 600--700 bars of oxygen build up and leading to the peak in the O$_2$ posteriors
 at around that value.
 
+Figure~\ref{fig:planet_epsilon10} is similar to Figure~\ref{fig:planet_epsilon}, but shows runs assuming Proxima Cen b
+formed with 10 TO of water. As before, the rows correspond to different escape efficiencies (0.15, 0.05, 0.01, from top
+to bottom). The amount of water lost increases in all cases, and for $\epsilon_\mathrm{xuv} = 0.15$ the planet is
+desiccated or almost desiccated in about 20\% of runs. The amount of O$_2$ that builds up is similar to that in the
+previous figure, but O$_2$ pressures exceeding 1000 bars are now possible in 20--30\% of cases for XUV efficiencies of 0.15
+or 0.05.
+
 \begin{figure}[hbt]
   \begin{center}
       \includegraphics[width=0.45\textwidth]{figures/planet_hydrogen.pdf}
@@ -242,20 +263,64 @@ In this case, most of the water is lost to space in the majority of the runs.
 \begin{figure}[hbt]
   \begin{center}
       \includegraphics[width=0.45\textwidth]{figures/planet_magma.pdf}
-       \caption{Planet posteriors (magma).}
-     \label{fig:planet_hydrogen}
+       \caption{The same as panel (a) in Figure~\ref{fig:planet_epsilon}, but for efficient surface sinks
+       ($\zeta_\mathrm{O_2} = 1$). The O$_2$ posterior now corresponds to the amount of oxygen (in bars) absorbed
+       at the planet surface. The absence of atmospheric O$_2$ facilitates the loss of hydrogen, which must
+       no longer diffuse through the O$_2$ to escape. In this case, nearly 80\% of runs result in complete desiccation
+       (note the broken axis in the first panel). In all cases, Proxima Cen b loses at least 1 TO.}
+     \label{fig:planet_magma}
   \end{center}
 \end{figure}
 
+In Figure~\ref{fig:planet_magma} we show the posteriors assuming the O$_2$ uptake
+efficiency of the surface $\zeta_\mathrm{O_2} = 1$, corresponding to instant O$_2$ removal by the surface. Compare
+to the top panel of Figure~\ref{fig:planet_epsilon}. In this case, the O$_2$ posterior corresponds to the total amount
+of oxygen absorbed by the surface, expressed in bars. While the total amount of oxygen retained by the planet
+is similar, the fraction of runs in which the planet loses all of its water increases from $\sim$ 20 to $\sim$ 80.
+This occurs because the buildup of atmospheric O$_2$ throttles the escape of hydrogen by decreasing its mixing
+ratio in the upper atmosphere; when O$_2$ is quickly absorbed at the surface, hydrogen can escape more easily.
 
 
 \begin{figure}[hbt]
   \begin{center}
       \includegraphics[width=0.45\textwidth]{figures/corner.pdf}
-       \caption{Correlations. Beta isn't correlated with water because it's too late to matter.}
+       \caption{Joint posteriors of selected parameters for a run with $\epsilon_\mathrm{xuv} = 0.01$ [same as
+        Figure~\ref{fig:planet_epsilon}(c)]. In addition to the correlation between the amount of water
+        lost and the amount of O$_2$ that builds up, several strong correlations stand out.
+        The strongest ones are between the XUV saturation fraction $f_\mathrm{sat}$ and
+        the water content (negative) and O$_2$ pressure (positive). Since most of the water loss occurs 
+        in the first few 100 Myr, the value of $f_\mathrm{sat}$ is the single most important parameter
+        controlling the present-day water and O$_2$ content of Proxima Cen b. The saturation timescale
+        also correlates with the water and oxygen, but not as strongly; for $t_\mathrm{sat} \gtrsim 2$ Gyr,
+        its exact value does not significantly affect the evolution of the planet. Shorter saturation
+        timescales correlate with higher saturation fractions and therefore indirectly affect the evolution. 
+        Interestingly, the correlation between the XUV power law slope $\beta_\mathrm{xuv}$ and the water or
+        O$_2$ content is negligible, since once saturation ends the water loss rate plummets --- the final
+        water content depends almost entirely on the properties of the star early on.}
      \label{fig:corner}
   \end{center}
 \end{figure}
+
+Finally, it is interesting to explore the various correlations between the parameters of the model. It is
+clear from the previous figures that the amount of oxygen that builds up strongly correlates with the
+amount of water lost from the planet, but additional correlations exist. In Figure~\ref{fig:corner} we plot
+the joint posteriors for the XUV saturation fraction, XUV saturation timescale, XUV power law exponent,
+present-day XUV luminosity, present-day water content, and present-day O$_2$ content for a run with
+$m_\mathrm{H_2O}^0 = 5$ TO, $m_\mathrm{H}^0 = 0$, $\epsilon_\mathrm{xuv} = 0.01$, and $\zeta_\mathrm{O_2} = 0$.
+The marginalized posteriors are shown at the top. The strongest correlations are between the final
+water and O$_2$ contents and the XUV saturation fraction (first column, bottom two panels). The higher
+the XUV saturation fraction, the more water is lost and the more O$_2$ builds up. While this
+may be unsurprising, neither the saturation timescale (second column) nor the power law exponent 
+(third column) correlate as strongly
+with the water and O$_2$ content. For saturation timescales longer than about 2 Gyr, the exact duration
+of the saturation phase does not affect the evolution of the planet, since nearly all of the water loss
+occurs in the first few 100 Myr. For the same reason, the value of the power law exponent does not
+significantly correlate with the water or oxygen. On the other hand, the present-day XUV luminosity does correlate
+with water loss, as it implies a higher XUV luminosity at early times.
+An accurate determination of $f_\mathrm{sat}$ and more precise measurements of $L_\mathrm{xuv}$ are therefore
+critical to determining the evolution of the water content of Proxima Cen b.
+
+\note{In summary...}
 
 \clearpage
 \bibliographystyle{apj}

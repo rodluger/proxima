@@ -1024,10 +1024,6 @@ def Figures():
   PlotXUVCorner('w5h0m0e01')
   
 if __name__ == '__main__':
-
-  name = 'w5h0m0', nsteps = 5000, nwalk = 40, nburn = 500, nsamples = 1000,
-           oceans = 5., hydrogen = 0., epsilon = 0.15, magma = False, 
-           walltime = 10, nodes = 2, ppn = 16, mpn = 250
   
   parser = argparse.ArgumentParser(prog = 'uncert', add_help = False)
   parser.add_argument("-n", "--name", type = str, default = 'test', help = 'The run name')

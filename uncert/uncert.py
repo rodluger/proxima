@@ -393,7 +393,7 @@ def PlotChains(name = 'w5h0m0', **kwargs):
   print("Plotting chains...")
   
   # Load
-  data = np.load(os.path.join(PATH, 'output', '%s.mcmc.npz' % name))
+  data = np.load(os.path.join(PATH, 'output', '%s.mcmc.npz' % name), allow_pickle=True)
   blobs = data['blobs']
   chain = data['chain']
   nwalk = data['nwalk']
@@ -508,7 +508,7 @@ def PlotCorner(name = 'w5h0m0', **kwargs):
   print("Plotting corner plot...")
   
   # Load
-  data = np.load(os.path.join(PATH, 'output', '%s.mcmc.npz' % name))
+  data = np.load(os.path.join(PATH, 'output', '%s.mcmc.npz' % name), allow_pickle=True)
   blobs = data['blobs']
   chain = data['chain']
   nwalk = data['nwalk']
@@ -540,7 +540,7 @@ def RunEvol(name = 'w5h0m0', nsamples = 1000, pool = None, **kwargs):
   print("Running evolution...")
   
   # Load
-  data = np.load(os.path.join(PATH, 'output', '%s.mcmc.npz' % name))
+  data = np.load(os.path.join(PATH, 'output', '%s.mcmc.npz' % name), allow_pickle=True)
   blobs = data['blobs']
   chain = data['chain']
   nwalk = data['nwalk']
@@ -601,7 +601,7 @@ def PlotEvol(name = 'w5h0m0', **kwargs):
   print("Plotting evolution...")
   
   # Load
-  data = np.load(os.path.join(PATH, 'output', '%s.evol.npz' % name))
+  data = np.load(os.path.join(PATH, 'output', '%s.evol.npz' % name), allow_pickle=True)
   Time = data['Time']
   Luminosity = data['Luminosity']
   LXUVStellar = data['LXUVStellar']
@@ -670,7 +670,7 @@ def Posteriors(name = 'w5h0m0', **kwargs):
   '''
   
   # Load
-  data = np.load(os.path.join(PATH, 'output', '%s.mcmc.npz' % name))
+  data = np.load(os.path.join(PATH, 'output', '%s.mcmc.npz' % name), allow_pickle=True)
   blobs = data['blobs']
   chain = data['chain']
   nwalk = data['nwalk']
@@ -879,7 +879,7 @@ def Outputs(names = ['w5h0m0'], labels = None, figname = 'output', wsplit = Fals
   for plotnum, label, name, ax, axt in zip(range(len(names)), labels, names, axmain, axtop):
   
     # Load
-    data = np.load(os.path.join(PATH, 'output', '%s.mcmc.npz' % name))
+    data = np.load(os.path.join(PATH, 'output', '%s.mcmc.npz' % name), allow_pickle=True)
     blobs = data['blobs']
     chain = data['chain']
     nwalk = data['nwalk']
@@ -988,7 +988,7 @@ def PlotXUVCorner(name = 'w5h0m0e01', **kwargs):
   print("Plotting corner plot...")
   
   # Load
-  data = np.load(os.path.join(PATH, 'output', '%s.mcmc.npz' % name))
+  data = np.load(os.path.join(PATH, 'output', '%s.mcmc.npz' % name), allow_pickle=True)
   blobs = data['blobs']
   chain = data['chain']
   nwalk = data['nwalk']
